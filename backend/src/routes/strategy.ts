@@ -1,6 +1,7 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { Debt } from '../models/Debt';
-import { Income } from '../models/Income';
+import { Transaction } from '../models/Transaction';
+import { currentMonth } from '../utils/month';
 import { calculateStrategy } from '../services/debtStrategy';
 
 const router: Router = express.Router();
@@ -30,14 +31,7 @@ router.get('/overview', async (_req: Request, res: Response, next: NextFunction)
     const debts = await Debt.findAll();
     const totalDebt = debts.reduce((sum, d) => sum + parseFloat(d.amount.toString()), 0);
 
-    const today = new Date();
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-    const monthlyIncome = await Income.getTotalIncome(
-      startOfMonth.toISOString().split('T')[0],
-      endOfMonth.toISOString().split('T')[0]
-    );
+    const { income: monthlyIncome } = await Transaction.totalsByType(currentMonth());
 
     res.json({
       totalDebt,

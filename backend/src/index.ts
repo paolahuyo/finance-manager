@@ -3,7 +3,10 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { initDb } from './db/init';
 import debtsRouter from './routes/debts';
-import incomeRouter from './routes/income';
+import categoriesRouter from './routes/categories';
+import transactionsRouter from './routes/transactions';
+import summaryRouter from './routes/summary';
+import exchangeRateRouter from './routes/exchangeRate';
 import strategyRouter from './routes/strategy';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -27,7 +30,10 @@ initDb().catch(err => {
 
 // Routes
 app.use('/api/debts', debtsRouter);
-app.use('/api/income', incomeRouter);
+app.use('/api/categories', categoriesRouter);
+app.use('/api/transactions', transactionsRouter);
+app.use('/api/summary', summaryRouter);
+app.use('/api/exchange-rate', exchangeRateRouter);
 app.use('/api/strategy', strategyRouter);
 
 // Health check

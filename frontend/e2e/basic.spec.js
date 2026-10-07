@@ -5,18 +5,18 @@ test.describe('Finance Manager', () => {
     await page.goto('/');
   });
 
-  test('should load the header', async ({ page }) => {
-    const header = page.locator('h1');
-    await expect(header).toContainText('Finance Manager');
+  test('shows the header and the monthly summary', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Finance Manager');
+    await expect(page.getByText('Balance del mes')).toBeVisible();
   });
 
-  test('should display summary cards', async ({ page }) => {
-    const summaryCards = page.locator('div').filter({ hasText: /Total Debt|Debts|Monthly Income/ });
-    await expect(summaryCards).toHaveCount(3);
+  test('can navigate to the transactions form', async ({ page }) => {
+    await page.getByRole('button', { name: 'Movimientos' }).click();
+    await expect(page.getByRole('heading', { name: 'Nuevo movimiento' })).toBeVisible();
   });
 
-  test('should show debt form', async ({ page }) => {
-    const form = page.locator('form');
-    await expect(form).toBeVisible();
+  test('can navigate to debts', async ({ page }) => {
+    await page.getByRole('button', { name: 'Deudas' }).click();
+    await expect(page.getByRole('heading', { name: 'Nueva deuda' })).toBeVisible();
   });
 });

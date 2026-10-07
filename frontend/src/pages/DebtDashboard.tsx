@@ -1,129 +1,76 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import DebtForm from '../components/DebtForm';
+import { useEffect, useState } from 'react';
+import { api, errorMessage } from '../api';
+import type { Debt } from '../types';
+import { formatCOP } from '../utils/format';
+import DebtForm, { DebtFormData } from '../components/DebtForm';
 import DebtList from '../components/DebtList';
 import SummaryCard from '../components/SummaryCard';
 
-interface Debt {
-  id: number;
-  name: string;
-  amount: number;
-  interest_rate: number;
-  min_payment?: number;
-}
-
-interface DebtFormData {
-  name: string;
-  amount: string;
-  interest_rate: string;
-  min_payment: string;
-}
-
-interface Summary {
-  totalDebt: number;
-  debtCount: number;
-  monthlyIncome?: number;
-}
-
-const API_URL = '/api';
-
 export default function DebtDashboard(): JSX.Element {
   const [debts, setDebts] = useState<Debt[]>([]);
-  const [summary, setSummary] = useState<Summary>({ totalDebt: 0, debtCount: 0 });
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  useEffect(() => {
-    fetchDebts();
-    fetchSummary();
-  }, []);
-
-  const fetchDebts = async (): Promise<void> => {
+  const loadDebts = async (): Promise<void> => {
     try {
-      setLoading(true);
-      const response = await axios.get<Debt[]>(`${API_URL}/debts`);
-      setDebts(response.data);
+      setDebts(await api.debts());
       setError('');
     } catch (err) {
-      setError('Failed to load debts');
-      console.error(err);
+      setError(errorMessage(err, 'No se pudieron cargar las deudas'));
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSummary = async (): Promise<void> => {
+  useEffect(() => {
+    loadDebts();
+  }, []);
+
+  const handleAdd = async (data: DebtFormData): Promise<void> => {
     try {
-      const response = await axios.get<Summary>(`${API_URL}/strategy/overview`);
-      setSummary(response.data);
+      await api.createDebt({ ...data });
+      await loadDebts();
     } catch (err) {
-      console.error('Failed to load summary:', err);
+      setError(errorMessage(err, 'No se pudo agregar la deuda'));
     }
   };
 
-  const handleAddDebt = async (debtData: DebtFormData): Promise<void> => {
+  const handleDelete = async (id: number): Promise<void> => {
+    if (!window.confirm('¿Eliminar esta deuda?')) return;
     try {
-      await axios.post(`${API_URL}/debts`, debtData);
-      fetchDebts();
-      fetchSummary();
-      setError('');
+      await api.deleteDebt(id);
+      await loadDebts();
     } catch (err) {
-      setError('Failed to add debt');
-      console.error(err);
+      setError(errorMessage(err, 'No se pudo eliminar la deuda'));
     }
   };
 
-  const handleDeleteDebt = async (id: number): Promise<void> => {
-    if (window.confirm('Are you sure you want to delete this debt?')) {
-      try {
-        await axios.delete(`${API_URL}/debts/${id}`);
-        fetchDebts();
-        fetchSummary();
-      } catch (err) {
-        setError('Failed to delete debt');
-        console.error(err);
-      }
-    }
-  };
+  const totalDebt = debts.reduce((sum, d) => sum + d.amount, 0);
+  const totalMinPayments = debts.reduce((sum, d) => sum + (d.min_payment ?? 0), 0);
 
   return (
     <div className="space-y-8">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <SummaryCard
-          title="Total Debt"
-          value={`$${summary.totalDebt.toFixed(2)}`}
-          icon="💳"
-          color="red"
-        />
-        <SummaryCard
-          title="Debts"
-          value={summary.debtCount}
-          icon="📊"
-          color="blue"
-        />
-        <SummaryCard
-          title="Monthly Income"
-          value={`$${(summary.monthlyIncome || 0).toFixed(2)}`}
-          icon="💰"
-          color="green"
-        />
+        <SummaryCard title="Deuda total" value={formatCOP(totalDebt)} icon="💳" color="red" />
+        <SummaryCard title="Número de deudas" value={debts.length} icon="📊" color="blue" />
+        <SummaryCard title="Pagos mínimos al mes" value={formatCOP(totalMinPayments)} icon="🗓️" color="green" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-          <DebtForm onSubmit={handleAddDebt} />
+          <DebtForm onSubmit={handleAdd} />
         </div>
         <div className="lg:col-span-2">
           {loading ? (
-            <div className="text-center py-8">Loading...</div>
+            <div className="text-center py-8 text-gray-500">Cargando…</div>
           ) : (
-            <DebtList debts={debts} onDelete={handleDeleteDebt} />
+            <DebtList debts={debts} onDelete={handleDelete} />
           )}
         </div>
       </div>

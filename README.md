@@ -1,69 +1,55 @@
 # 💰 Finance Manager
 
-A full-stack web application to help you manage, track, and eliminate debt efficiently.
+Personal finance app: track monthly income, expenses and debts in **Colombian pesos (COP)**.
 
 ## Features
 
-✅ **Debt Tracking** - Add and manage multiple debts with interest rates
-✅ **Income Tracking** - Record and monitor your income streams
-✅ **Smart Strategies** - Snowball and Avalanche debt payoff strategies
-✅ **Visual Dashboard** - Real-time overview of your financial situation
-✅ **Responsive Design** - Works on desktop, tablet, and mobile
+- **Monthly summary** — income, expenses and balance, with a breakdown by category. Browse month by month.
+- **Transactions** — income and expenses with categories. Amounts in **USD are converted to COP** with the day's exchange rate (editable); the original amount and the rate used are kept for traceability.
+- **Debts** — balance, interest rate and minimum payment per debt.
 
-## Tech Stack
+Planned: debts inside the monthly flow, bank-statement PDF import, budgets and charts, payoff strategies (snowball / avalanche).
 
-### Backend
-- Node.js + Express
-- MySQL
-- RESTful API
+## Stack
 
-### Frontend
-- React 18
-- Vite
-- Tailwind CSS
-- Axios
+- **Backend:** Node.js, Express, TypeScript, MySQL, Zod
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
+- **Infra:** Docker Compose (MySQL + API + nginx)
 
-## Quick Start
+## Run it
 
-See [QUICKSTART.md](./QUICKSTART.md) for setup instructions.
+```bash
+docker compose up --build -d
+```
 
-## Project Structure
+Open http://localhost:5173. Stop with `docker compose down` (data is kept in a Docker volume; `down -v` wipes it).
+
+See [QUICKSTART.md](./QUICKSTART.md) for local development without Docker.
+
+## Project structure
 
 ```
 finance-manager/
-├── backend/          # Express API
-│   ├── src/
-│   │   ├── db/      # Database initialization
-│   │   ├── models/  # Data models
-│   │   ├── routes/  # API routes
-│   │   └── services/# Business logic
-│   └── package.json
-├── frontend/         # React application
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   └── utils/
-│   └── package.json
+├── backend/     # Express API (routes, models, services, db)
+├── frontend/    # React app (pages, components, utils)
 └── docker-compose.yml
 ```
 
-## Usage
+## API
 
-1. Add your debts with details (name, amount, interest rate)
-2. Record your monthly income
-3. View your financial summary
-4. Get recommendations for debt payoff strategies
+| Endpoint | Description |
+|---|---|
+| `GET /api/summary?month=YYYY-MM` | Income, expenses, balance and category totals |
+| `GET/POST /api/transactions` | List by month / create (`currency: "USD"` is converted to COP) |
+| `PUT/DELETE /api/transactions/:id` | Edit / remove |
+| `GET /api/categories` | Income and expense categories |
+| `GET /api/exchange-rate` | Current USD→COP rate (cached 1 h) |
+| `GET/POST/DELETE /api/debts` | Debts |
 
-## Docker Deployment
+## Privacy
 
-```bash
-docker-compose up
-```
+Bank statements and exports are git-ignored (`uploads/`, `*.pdf`). Never commit personal financial data.
 
 ## License
 
 MIT
-
-## Author
-
-Angela Paolah

@@ -15,3 +15,7 @@ build/
 out/
 coverage/
 .nyc_output/
+
+# Personal data (bank statements, exports) - never commit
+uploads/
+*.pdf
