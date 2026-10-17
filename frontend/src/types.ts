@@ -52,3 +52,12 @@ export interface Debt {
   interest_rate: number;
   min_payment: number | null;
 }
+
+export interface TrmInfo {
+  usd_cop: number;
+  source: 'TRM';
+  /** First day the returned TRM was in force. */
+  valid_from: string;
+  /** False when the requested date had no published TRM and the latest earlier one was used. */
+  exact: boolean;
+}

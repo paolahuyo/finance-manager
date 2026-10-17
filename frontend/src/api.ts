@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Category, Debt, MonthSummary, Transaction, TransactionPayload } from './types';
+import type { Category, Debt, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
 
 const http = axios.create({ baseURL: '/api' });
 
@@ -27,9 +27,10 @@ export const api = {
   summary: async (month: string): Promise<MonthSummary> =>
     (await http.get<MonthSummary>('/summary', { params: { month } })).data,
 
-  usdCopRate: async (): Promise<number | null> => {
+  /** Official TRM in force on `date`, or null if it cannot be fetched. */
+  trmRate: async (date: string): Promise<TrmInfo | null> => {
     try {
-      return (await http.get<{ usd_cop: number }>('/exchange-rate')).data.usd_cop;
+      return (await http.get<TrmInfo>('/exchange-rate', { params: { date } })).data;
     } catch {
       return null;
     }

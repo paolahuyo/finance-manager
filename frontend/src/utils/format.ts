@@ -39,3 +39,10 @@ export function formatDay(isoDate: string): string {
     new Date(year, mon - 1, day)
   );
 }
+
+export function formatLongDay(isoDate: string): string {
+  const [year, mon, day] = isoDate.split('-').map(Number);
+  return new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).format(
+    new Date(year, mon - 1, day)
+  );
+}

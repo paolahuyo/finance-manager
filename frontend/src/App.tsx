@@ -22,13 +22,11 @@ function App(): JSX.Element {
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<MonthSummary | null>(null);
-  const [usdRate, setUsdRate] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
     api.categories().then(setCategories).catch(() => setError('No se pudieron cargar las categorías'));
-    api.usdCopRate().then(setUsdRate);
   }, []);
 
   const loadMonth = useCallback(async (target: string): Promise<{ txs: Transaction[]; sum: MonthSummary }> => {
@@ -116,7 +114,6 @@ function App(): JSX.Element {
           <TransactionsPage
             categories={categories}
             transactions={transactions}
-            usdRate={usdRate}
             loading={loading}
             onCreate={handleCreate}
             onDelete={handleDelete}

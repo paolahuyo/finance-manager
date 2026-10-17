@@ -5,7 +5,7 @@ Personal finance app: track monthly income, expenses and debts in **Colombian pe
 ## Features
 
 - **Monthly summary** — income, expenses and balance, with a breakdown by category. Browse month by month.
-- **Transactions** — income and expenses with categories. Amounts in **USD are converted to COP** with the day's exchange rate (editable); the original amount and the rate used are kept for traceability.
+- **Transactions** — income and expenses with categories. Amounts in **USD are converted to COP** using the official **TRM of the date you choose** (editable); the original amount and the rate used are kept for traceability.
 - **Debts** — balance, interest rate and minimum payment per debt.
 
 Planned: debts inside the monthly flow, bank-statement PDF import, budgets and charts, payoff strategies (snowball / avalanche).
@@ -43,7 +43,7 @@ finance-manager/
 | `GET/POST /api/transactions` | List by month / create (`currency: "USD"` is converted to COP) |
 | `PUT/DELETE /api/transactions/:id` | Edit / remove |
 | `GET /api/categories` | Income and expense categories |
-| `GET /api/exchange-rate` | Current USD→COP rate (cached 1 h) |
+| `GET /api/exchange-rate?date=YYYY-MM-DD` | Official TRM in force on that day (Superfinanciera open data). Without `date`: market reference rate |
 | `GET/POST/DELETE /api/debts` | Debts |
 
 ## Privacy

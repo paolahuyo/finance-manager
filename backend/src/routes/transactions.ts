@@ -2,7 +2,7 @@ import express, { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { Category } from '../models/Category';
 import { Transaction, TransactionInput } from '../models/Transaction';
-import { getUsdCopRate } from '../services/exchangeRate';
+import { getTrmForDate, getUsdCopRate } from '../services/exchangeRate';
 import { currentMonth, isValidMonth } from '../utils/month';
 
 const router: Router = express.Router();
@@ -34,7 +34,7 @@ async function parseBody(req: Request, res: Response): Promise<TransactionInput 
   let rate = 1;
   if (body.currency === 'USD') {
     try {
-      rate = body.exchange_rate ?? (await getUsdCopRate()).rate;
+      rate = body.exchange_rate ?? (await getTrmForDate(body.date).then(t => t.rate, () => getUsdCopRate().then(m => m.rate)));
     } catch {
       res.status(400).json({ error: 'Exchange rate unavailable, send exchange_rate' });
       return null;
