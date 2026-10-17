@@ -1,4 +1,5 @@
 import mysql from 'mysql2/promise';
+import { RowDataPacket } from 'mysql2';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -30,7 +31,7 @@ const DEFAULT_CATEGORIES: ReadonlyArray<readonly [string, 'income' | 'expense']>
   ['Educación', 'expense'],
   ['Entretenimiento', 'expense'],
   ['Ropa', 'expense'],
-  ['Pago de deudas', 'expense'],
+  ['Intereses y comisiones', 'expense'],
   ['Otros gastos', 'expense']
 ];
 
@@ -39,16 +40,18 @@ export async function initDb(): Promise<void> {
   try {
     console.log('✅ Database connected');
 
+    // Credit cards, loans and personal debts. Balance = opening_balance + charges - payments.
     await connection.query(`
-      CREATE TABLE IF NOT EXISTS debts (
+      CREATE TABLE IF NOT EXISTS accounts (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        amount DECIMAL(15, 2) NOT NULL,
-        interest_rate DECIMAL(5, 2) DEFAULT 0,
-        min_payment DECIMAL(15, 2),
-        status ENUM('active', 'paid') DEFAULT 'active',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        name VARCHAR(100) NOT NULL UNIQUE,
+        bank VARCHAR(100) NULL,
+        kind ENUM('credit_card', 'loan', 'personal') NOT NULL DEFAULT 'credit_card',
+        annual_rate DECIMAL(6, 2) NULL,
+        credit_limit DECIMAL(15, 2) NULL,
+        opening_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+        notes VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -66,20 +69,42 @@ export async function initDb(): Promise<void> {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS transactions (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        type ENUM('income', 'expense') NOT NULL,
+        type ENUM('income', 'expense', 'payment') NOT NULL,
         description VARCHAR(255) NOT NULL,
         amount_cop DECIMAL(15, 2) NOT NULL,
         original_amount DECIMAL(15, 2) NOT NULL,
         original_currency ENUM('COP', 'USD') NOT NULL DEFAULT 'COP',
         exchange_rate DECIMAL(12, 4) NOT NULL DEFAULT 1,
         category_id INT NULL,
+        account_id INT NULL,
         date DATE NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_date (date),
+        INDEX idx_account (account_id),
         CONSTRAINT fk_transaction_category FOREIGN KEY (category_id)
-          REFERENCES categories(id) ON DELETE SET NULL
+          REFERENCES categories(id) ON DELETE SET NULL,
+        CONSTRAINT fk_transaction_account FOREIGN KEY (account_id)
+          REFERENCES accounts(id) ON DELETE SET NULL
       )
     `);
+
+    // Idempotent upgrade for databases created before accounts existed.
+    await connection.query(
+      "ALTER TABLE transactions MODIFY type ENUM('income', 'expense', 'payment') NOT NULL"
+    );
+    const [cols] = await connection.query<RowDataPacket[]>(
+      `SELECT 1 FROM information_schema.columns
+       WHERE table_schema = DATABASE() AND table_name = 'transactions' AND column_name = 'account_id'`
+    );
+    if (cols.length === 0) {
+      await connection.query(`
+        ALTER TABLE transactions
+          ADD COLUMN account_id INT NULL AFTER category_id,
+          ADD INDEX idx_account (account_id),
+          ADD CONSTRAINT fk_transaction_account FOREIGN KEY (account_id)
+            REFERENCES accounts(id) ON DELETE SET NULL
+      `);
+    }
 
     await connection.query(
       'INSERT IGNORE INTO categories (name, type) VALUES ?',

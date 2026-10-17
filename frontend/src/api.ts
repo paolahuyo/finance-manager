@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Category, Debt, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
+import type { Account, AccountPayload, Category, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
 
 const http = axios.create({ baseURL: '/api' });
 
@@ -36,11 +36,12 @@ export const api = {
     }
   },
 
-  debts: async (): Promise<Debt[]> => (await http.get<Debt[]>('/debts')).data,
-  createDebt: async (data: Record<string, unknown>): Promise<void> => {
-    await http.post('/debts', data);
+  accounts: async (month: string): Promise<Account[]> =>
+    (await http.get<Account[]>('/accounts', { params: { month } })).data,
+  createAccount: async (payload: AccountPayload): Promise<void> => {
+    await http.post('/accounts', payload);
   },
-  deleteDebt: async (id: number): Promise<void> => {
-    await http.delete(`/debts/${id}`);
+  deleteAccount: async (id: number): Promise<void> => {
+    await http.delete(`/accounts/${id}`);
   }
 };

@@ -6,6 +6,12 @@ interface TransactionListProps {
   onDelete: (id: number) => void;
 }
 
+const TYPE_STYLE = {
+  income: { color: 'text-green-600', sign: '+' },
+  expense: { color: 'text-red-600', sign: '−' },
+  payment: { color: 'text-blue-600', sign: '→ ' }
+} as const;
+
 export default function TransactionList({ transactions, onDelete }: TransactionListProps): JSX.Element {
   if (transactions.length === 0) {
     return (
@@ -20,20 +26,22 @@ export default function TransactionList({ transactions, onDelete }: TransactionL
       <h2 className="text-xl font-bold p-6 border-b">Movimientos</h2>
       <ul className="divide-y">
         {transactions.map(tx => {
-          const isIncome = tx.type === 'income';
+          const style = TYPE_STYLE[tx.type];
           return (
             <li key={tx.id} className="flex items-center justify-between gap-4 px-6 py-3 hover:bg-gray-50">
               <div className="min-w-0">
                 <p className="font-medium text-gray-900 truncate">{tx.description}</p>
                 <p className="text-xs text-gray-500">
-                  {formatDay(tx.date)} · {tx.category_name ?? 'Sin categoría'}
+                  {formatDay(tx.date)} ·{' '}
+                  {tx.type === 'payment' ? `Abono a ${tx.account_name ?? '—'}` : tx.category_name ?? 'Sin categoría'}
+                  {tx.type !== 'payment' && tx.account_name && ` · ${tx.account_name}`}
                   {tx.original_currency === 'USD' &&
                     ` · ${formatUSD(tx.original_amount)} a ${formatCOP(tx.exchange_rate)}`}
                 </p>
               </div>
               <div className="flex items-center gap-4 shrink-0">
-                <span className={`font-semibold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
-                  {isIncome ? '+' : '−'}{formatCOP(tx.amount_cop)}
+                <span className={`font-semibold ${style.color}`}>
+                  {style.sign}{formatCOP(tx.amount_cop)}
                 </span>
                 <button
                   onClick={() => onDelete(tx.id)}

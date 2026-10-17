@@ -1,4 +1,10 @@
-import { IDebt } from '../models/Debt';
+export interface IDebt {
+  id: number;
+  name: string;
+  amount: number;
+  interest_rate: number;
+  min_payment?: number | null;
+}
 
 interface DebtAllocation {
   debtId: number;

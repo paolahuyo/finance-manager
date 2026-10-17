@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, errorMessage } from './api';
-import type { Category, MonthSummary, Transaction, TransactionPayload } from './types';
+import type { Account, AccountPayload, Category, MonthSummary, Transaction, TransactionPayload } from './types';
 import { currentMonth } from './utils/format';
 import Header from './components/Header';
 import MonthNavigator from './components/MonthNavigator';
-import DebtDashboard from './pages/DebtDashboard';
+import AccountsPage from './pages/AccountsPage';
 import SummaryPage from './pages/SummaryPage';
 import TransactionsPage from './pages/TransactionsPage';
 
-type Tab = 'summary' | 'transactions' | 'debts';
+type Tab = 'summary' | 'transactions' | 'accounts';
 
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: 'summary', label: 'Resumen' },
   { id: 'transactions', label: 'Movimientos' },
-  { id: 'debts', label: 'Deudas' }
+  { id: 'accounts', label: 'Tarjetas' }
 ];
 
 function App(): JSX.Element {
@@ -22,6 +22,7 @@ function App(): JSX.Element {
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<MonthSummary | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
@@ -29,19 +30,24 @@ function App(): JSX.Element {
     api.categories().then(setCategories).catch(() => setError('No se pudieron cargar las categorías'));
   }, []);
 
-  const loadMonth = useCallback(async (target: string): Promise<{ txs: Transaction[]; sum: MonthSummary }> => {
-    const [txs, sum] = await Promise.all([api.transactions(target), api.summary(target)]);
-    return { txs, sum };
+  const loadMonth = useCallback(async (target: string): Promise<{ txs: Transaction[]; sum: MonthSummary; accs: Account[] }> => {
+    const [txs, sum, accs] = await Promise.all([
+      api.transactions(target),
+      api.summary(target),
+      api.accounts(target)
+    ]);
+    return { txs, sum, accs };
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     loadMonth(month)
-      .then(({ txs, sum }) => {
+      .then(({ txs, sum, accs }) => {
         if (cancelled) return;
         setTransactions(txs);
         setSummary(sum);
+        setAccounts(accs);
         setError('');
       })
       .catch(() => !cancelled && setError('No se pudieron cargar los datos del mes'))
@@ -52,9 +58,10 @@ function App(): JSX.Element {
   }, [month, loadMonth]);
 
   const refresh = async (): Promise<void> => {
-    const { txs, sum } = await loadMonth(month);
+    const { txs, sum, accs } = await loadMonth(month);
     setTransactions(txs);
     setSummary(sum);
+    setAccounts(accs);
   };
 
   const handleCreate = async (payload: TransactionPayload): Promise<void> => {
@@ -68,6 +75,27 @@ function App(): JSX.Element {
     } catch (err) {
       setError(errorMessage(err, 'No se pudo guardar el movimiento'));
       throw err;
+    }
+  };
+
+  const handleCreateAccount = async (payload: AccountPayload): Promise<void> => {
+    try {
+      await api.createAccount(payload);
+      setError('');
+      await refresh();
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo guardar la tarjeta'));
+      throw err;
+    }
+  };
+
+  const handleDeleteAccount = async (id: number): Promise<void> => {
+    if (!window.confirm('¿Eliminar esta tarjeta? Sus movimientos se conservan, pero quedan sin tarjeta.')) return;
+    try {
+      await api.deleteAccount(id);
+      await refresh();
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo eliminar la tarjeta'));
     }
   };
 
@@ -100,7 +128,7 @@ function App(): JSX.Element {
               </button>
             ))}
           </nav>
-          {tab !== 'debts' && <MonthNavigator month={month} onChange={setMonth} />}
+          <MonthNavigator month={month} onChange={setMonth} />
         </div>
 
         {error && (
@@ -113,13 +141,21 @@ function App(): JSX.Element {
         {tab === 'transactions' && (
           <TransactionsPage
             categories={categories}
+            accounts={accounts}
             transactions={transactions}
             loading={loading}
             onCreate={handleCreate}
             onDelete={handleDelete}
           />
         )}
-        {tab === 'debts' && <DebtDashboard />}
+        {tab === 'accounts' && (
+          <AccountsPage
+            month={month}
+            accounts={accounts}
+            onCreate={handleCreateAccount}
+            onDelete={handleDeleteAccount}
+          />
+        )}
       </main>
     </div>
   );

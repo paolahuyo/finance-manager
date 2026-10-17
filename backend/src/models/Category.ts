@@ -1,12 +1,12 @@
 import { RowDataPacket } from 'mysql2';
 import { getPool } from '../db/init';
 
-export type TransactionType = 'income' | 'expense';
+export type CategoryType = 'income' | 'expense';
 
 export interface ICategory {
   id: number;
   name: string;
-  type: TransactionType;
+  type: CategoryType;
 }
 
 export class Category {

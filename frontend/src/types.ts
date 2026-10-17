@@ -1,10 +1,11 @@
-export type TransactionType = 'income' | 'expense';
+export type TransactionType = 'income' | 'expense' | 'payment';
+export type CategoryType = 'income' | 'expense';
 export type Currency = 'COP' | 'USD';
 
 export interface Category {
   id: number;
   name: string;
-  type: TransactionType;
+  type: CategoryType;
 }
 
 export interface Transaction {
@@ -17,6 +18,8 @@ export interface Transaction {
   exchange_rate: number;
   category_id: number | null;
   category_name: string | null;
+  account_id: number | null;
+  account_name: string | null;
   date: string;
 }
 
@@ -27,6 +30,7 @@ export interface TransactionPayload {
   currency: Currency;
   exchange_rate?: number;
   category_id: number | null;
+  account_id: number | null;
   date: string;
 }
 
@@ -40,17 +44,37 @@ export interface MonthSummary {
   month: string;
   income: number;
   expense: number;
+  payments: number;
+  interest: number;
   balance: number;
   expenseByCategory: CategoryTotal[];
   incomeByCategory: CategoryTotal[];
 }
 
-export interface Debt {
+export type AccountKind = 'credit_card' | 'loan' | 'personal';
+
+export interface Account {
   id: number;
   name: string;
-  amount: number;
-  interest_rate: number;
-  min_payment: number | null;
+  bank: string | null;
+  kind: AccountKind;
+  annual_rate: number | null;
+  credit_limit: number | null;
+  opening_balance: number;
+  notes: string | null;
+  balance: number;
+  month_interest: number;
+  year_interest: number;
+  month_payments: number;
+}
+
+export interface AccountPayload {
+  name: string;
+  bank: string;
+  kind: AccountKind;
+  annual_rate: string;
+  credit_limit: string;
+  opening_balance: string;
 }
 
 export interface TrmInfo {

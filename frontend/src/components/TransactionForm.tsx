@@ -1,12 +1,19 @@
 import { useEffect, useState, FormEvent } from 'react';
-import type { Category, Currency, TransactionPayload, TransactionType } from '../types';
+import type { Account, Category, Currency, TransactionPayload, TransactionType } from '../types';
 import { api } from '../api';
 import { formatCOP, formatLongDay, todayISO } from '../utils/format';
 
 interface TransactionFormProps {
   categories: Category[];
+  accounts: Account[];
   onSubmit: (payload: TransactionPayload) => Promise<void>;
 }
+
+const TYPE_OPTIONS: ReadonlyArray<{ value: TransactionType; label: string; active: string }> = [
+  { value: 'expense', label: 'Gasto', active: 'bg-red-600 text-white border-red-600' },
+  { value: 'income', label: 'Ingreso', active: 'bg-green-600 text-white border-green-600' },
+  { value: 'payment', label: 'Abono', active: 'bg-blue-600 text-white border-blue-600' }
+];
 
 const inputClass =
   'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
@@ -14,6 +21,7 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
 
 export default function TransactionForm({
   categories,
+  accounts,
   onSubmit
 }: TransactionFormProps): JSX.Element {
   const [type, setType] = useState<TransactionType>('expense');
@@ -22,6 +30,7 @@ export default function TransactionForm({
   const [currency, setCurrency] = useState<Currency>('COP');
   const [rate, setRate] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [accountId, setAccountId] = useState('');
   const [date, setDate] = useState(todayISO());
   const [saving, setSaving] = useState(false);
 
@@ -59,6 +68,7 @@ export default function TransactionForm({
   }, [currency, rateDate, rateManual]);
 
   const typeCategories = categories.filter(c => c.type === type);
+  const isPayment = type === 'payment';
   const amountNumber = Number(amount);
   const rateNumber = Number(rate);
   const preview =
@@ -69,6 +79,7 @@ export default function TransactionForm({
   const changeType = (next: TransactionType): void => {
     setType(next);
     setCategoryId('');
+    if (next === 'income') setAccountId('');
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
@@ -81,7 +92,8 @@ export default function TransactionForm({
         amount: amountNumber,
         currency,
         exchange_rate: currency === 'USD' && rateNumber > 0 ? rateNumber : undefined,
-        category_id: categoryId ? Number(categoryId) : null,
+        category_id: !isPayment && categoryId ? Number(categoryId) : null,
+        account_id: accountId ? Number(accountId) : null,
         date
       });
       setDescription('');
@@ -98,22 +110,20 @@ export default function TransactionForm({
     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-4">
       <h2 className="text-xl font-bold">Nuevo movimiento</h2>
 
-      <div className="grid grid-cols-2 gap-2" role="group" aria-label="Tipo de movimiento">
-        {(['expense', 'income'] as const).map(option => (
+      <div className="grid grid-cols-3 gap-2" role="group" aria-label="Tipo de movimiento">
+        {TYPE_OPTIONS.map(option => (
           <button
-            key={option}
+            key={option.value}
             type="button"
-            onClick={() => changeType(option)}
-            aria-pressed={type === option}
+            onClick={() => changeType(option.value)}
+            aria-pressed={type === option.value}
             className={`py-2 rounded-md border font-medium ${
-              type === option
-                ? option === 'expense'
-                  ? 'bg-red-600 text-white border-red-600'
-                  : 'bg-green-600 text-white border-green-600'
+              type === option.value
+                ? option.active
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
             }`}
           >
-            {option === 'expense' ? 'Gasto' : 'Ingreso'}
+            {option.label}
           </button>
         ))}
       </div>
@@ -210,22 +220,47 @@ export default function TransactionForm({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {type !== 'income' && (
         <div>
-          <label className={labelClass} htmlFor="tx-category">Categoría</label>
+          <label className={labelClass} htmlFor="tx-account">
+            {isPayment ? 'Abono a' : 'Pagado con (opcional)'}
+          </label>
           <select
-            id="tx-category"
+            id="tx-account"
             className={inputClass}
-            value={categoryId}
-            onChange={e => setCategoryId(e.target.value)}
+            value={accountId}
+            onChange={e => setAccountId(e.target.value)}
+            required={isPayment}
           >
-            <option value="">Sin categoría</option>
-            {typeCategories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            <option value="">{isPayment ? 'Elige la tarjeta o deuda' : 'Efectivo / débito'}</option>
+            {accounts.map(a => (
+              <option key={a.id} value={a.id}>{a.name}</option>
             ))}
           </select>
+          {isPayment && accounts.length === 0 && (
+            <p className="text-xs text-red-600 mt-1">Primero crea una tarjeta en la pestaña Tarjetas.</p>
+          )}
         </div>
-        <div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {!isPayment && (
+          <div>
+            <label className={labelClass} htmlFor="tx-category">Categoría</label>
+            <select
+              id="tx-category"
+              className={inputClass}
+              value={categoryId}
+              onChange={e => setCategoryId(e.target.value)}
+            >
+              <option value="">Sin categoría</option>
+              {typeCategories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className={isPayment ? 'sm:col-span-2' : ''}>
           <label className={labelClass} htmlFor="tx-date">Fecha</label>
           <input
             id="tx-date"

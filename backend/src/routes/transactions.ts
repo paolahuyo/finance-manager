@@ -1,5 +1,6 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { Account } from '../models/Account';
 import { Category } from '../models/Category';
 import { Transaction, TransactionInput } from '../models/Transaction';
 import { getTrmForDate, getUsdCopRate } from '../services/exchangeRate';
@@ -8,12 +9,13 @@ import { currentMonth, isValidMonth } from '../utils/month';
 const router: Router = express.Router();
 
 const transactionSchema = z.object({
-  type: z.enum(['income', 'expense']),
+  type: z.enum(['income', 'expense', 'payment']),
   description: z.string().trim().min(1, 'Required').max(255),
   amount: z.coerce.number().positive('Must be greater than 0'),
   currency: z.enum(['COP', 'USD']).default('COP'),
   exchange_rate: z.coerce.number().positive().optional(),
   category_id: z.coerce.number().int().positive().nullable().optional(),
+  account_id: z.coerce.number().int().positive().nullable().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
 });
 
@@ -41,7 +43,18 @@ async function parseBody(req: Request, res: Response): Promise<TransactionInput 
     }
   }
 
-  const categoryId = body.category_id ?? null;
+  const accountId = body.account_id ?? null;
+  if (body.type === 'payment' && accountId === null) {
+    res.status(400).json({ error: 'A payment needs the account it is paid to (account_id)' });
+    return null;
+  }
+  if (accountId !== null && !(await Account.findById(accountId))) {
+    res.status(400).json({ error: 'Account does not exist' });
+    return null;
+  }
+
+  // Payments are neither income nor expense, so they carry no category.
+  const categoryId = body.type === 'payment' ? null : body.category_id ?? null;
   if (categoryId !== null) {
     const category = await Category.findById(categoryId);
     if (!category || category.type !== body.type) {
@@ -58,6 +71,7 @@ async function parseBody(req: Request, res: Response): Promise<TransactionInput 
     original_currency: body.currency,
     exchange_rate: rate,
     category_id: categoryId,
+    account_id: accountId,
     date: body.date
   };
 }

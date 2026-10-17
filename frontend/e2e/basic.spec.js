@@ -15,8 +15,8 @@ test.describe('Finance Manager', () => {
     await expect(page.getByRole('heading', { name: 'Nuevo movimiento' })).toBeVisible();
   });
 
-  test('can navigate to debts', async ({ page }) => {
-    await page.getByRole('button', { name: 'Deudas' }).click();
-    await expect(page.getByRole('heading', { name: 'Nueva deuda' })).toBeVisible();
+  test('can navigate to cards', async ({ page }) => {
+    await page.getByRole('button', { name: 'Tarjetas' }).click();
+    await expect(page.getByRole('heading', { name: 'Nueva tarjeta o deuda' })).toBeVisible();
   });
 });

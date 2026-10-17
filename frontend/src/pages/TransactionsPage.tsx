@@ -1,9 +1,10 @@
-import type { Category, Transaction, TransactionPayload } from '../types';
+import type { Account, Category, Transaction, TransactionPayload } from '../types';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 
 interface TransactionsPageProps {
   categories: Category[];
+  accounts: Account[];
   transactions: Transaction[];
   loading: boolean;
   onCreate: (payload: TransactionPayload) => Promise<void>;
@@ -12,6 +13,7 @@ interface TransactionsPageProps {
 
 export default function TransactionsPage({
   categories,
+  accounts,
   transactions,
   loading,
   onCreate,
@@ -20,7 +22,7 @@ export default function TransactionsPage({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
       <div className="lg:col-span-2">
-        <TransactionForm categories={categories} onSubmit={onCreate} />
+        <TransactionForm categories={categories} accounts={accounts} onSubmit={onCreate} />
       </div>
       <div className="lg:col-span-3">
         {loading && transactions.length === 0 ? (

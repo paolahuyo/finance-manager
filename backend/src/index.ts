@@ -2,12 +2,11 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { initDb } from './db/init';
-import debtsRouter from './routes/debts';
+import accountsRouter from './routes/accounts';
 import categoriesRouter from './routes/categories';
 import transactionsRouter from './routes/transactions';
 import summaryRouter from './routes/summary';
 import exchangeRateRouter from './routes/exchangeRate';
-import strategyRouter from './routes/strategy';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -29,12 +28,11 @@ initDb().catch(err => {
 });
 
 // Routes
-app.use('/api/debts', debtsRouter);
+app.use('/api/accounts', accountsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/summary', summaryRouter);
 app.use('/api/exchange-rate', exchangeRateRouter);
-app.use('/api/strategy', strategyRouter);
 
 // Health check
 app.get('/health', (_req, res) => {

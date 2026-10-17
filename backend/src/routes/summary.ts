@@ -1,4 +1,5 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
+import { INTEREST_CATEGORY } from '../models/Account';
 import { Transaction } from '../models/Transaction';
 import { currentMonth, isValidMonth } from '../utils/month';
 
@@ -20,6 +21,8 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       month,
       income: totals.income,
       expense: totals.expense,
+      payments: totals.payment,
+      interest: expenseByCategory.find(c => c.category_name === INTEREST_CATEGORY)?.total ?? 0,
       balance: totals.income - totals.expense,
       expenseByCategory,
       incomeByCategory

@@ -26,6 +26,11 @@ export default function SummaryPage({ summary, loading }: SummaryPageProps): JSX
         />
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <SummaryCard title="Intereses y comisiones del mes" value={formatCOP(summary.interest)} icon="🏦" color="red" />
+        <SummaryCard title="Abonos a tarjetas y deudas" value={formatCOP(summary.payments)} icon="💳" color="blue" />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <CategoryBreakdown title="Gastos por categoría" items={summary.expenseByCategory} barClass="bg-red-500" />
         <CategoryBreakdown title="Ingresos por categoría" items={summary.incomeByCategory} barClass="bg-green-500" />

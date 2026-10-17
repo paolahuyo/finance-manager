@@ -1,8 +1,8 @@
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { getPool } from '../db/init';
 import { monthRange } from '../utils/month';
-import { TransactionType } from './Category';
 
+export type TransactionType = 'income' | 'expense' | 'payment';
 export type Currency = 'COP' | 'USD';
 
 export interface ITransaction {
@@ -15,6 +15,8 @@ export interface ITransaction {
   exchange_rate: number;
   category_id: number | null;
   category_name: string | null;
+  account_id: number | null;
+  account_name: string | null;
   date: string;
 }
 
@@ -26,6 +28,7 @@ export interface TransactionInput {
   original_currency: Currency;
   exchange_rate: number;
   category_id: number | null;
+  account_id: number | null;
   date: string;
 }
 
@@ -38,9 +41,10 @@ export interface CategoryTotal {
 const SELECT_WITH_CATEGORY = `
   SELECT t.id, t.type, t.description, t.amount_cop, t.original_amount,
          t.original_currency, t.exchange_rate, t.category_id,
-         c.name AS category_name, t.date
+         c.name AS category_name, t.account_id, a.name AS account_name, t.date
   FROM transactions t
   LEFT JOIN categories c ON c.id = t.category_id
+  LEFT JOIN accounts a ON a.id = t.account_id
 `;
 
 export class Transaction {
@@ -64,11 +68,11 @@ export class Transaction {
   static async create(data: TransactionInput): Promise<ITransaction> {
     const [result] = await getPool().query<ResultSetHeader>(
       `INSERT INTO transactions
-        (type, description, amount_cop, original_amount, original_currency, exchange_rate, category_id, date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        (type, description, amount_cop, original_amount, original_currency, exchange_rate, category_id, account_id, date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.type, data.description, data.amount_cop, data.original_amount,
-        data.original_currency, data.exchange_rate, data.category_id, data.date
+        data.original_currency, data.exchange_rate, data.category_id, data.account_id, data.date
       ]
     );
     return (await this.findById(result.insertId)) as ITransaction;
@@ -77,10 +81,10 @@ export class Transaction {
   static async update(id: number, data: TransactionInput): Promise<ITransaction | undefined> {
     const [result] = await getPool().query<ResultSetHeader>(
       `UPDATE transactions SET type = ?, description = ?, amount_cop = ?, original_amount = ?,
-         original_currency = ?, exchange_rate = ?, category_id = ?, date = ? WHERE id = ?`,
+         original_currency = ?, exchange_rate = ?, category_id = ?, account_id = ?, date = ? WHERE id = ?`,
       [
         data.type, data.description, data.amount_cop, data.original_amount,
-        data.original_currency, data.exchange_rate, data.category_id, data.date, id
+        data.original_currency, data.exchange_rate, data.category_id, data.account_id, data.date, id
       ]
     );
     return result.affectedRows ? this.findById(id) : undefined;
@@ -94,19 +98,19 @@ export class Transaction {
     return result.affectedRows > 0;
   }
 
-  static async totalsByType(month: string): Promise<{ income: number; expense: number }> {
+  static async totalsByType(month: string): Promise<{ income: number; expense: number; payment: number }> {
     const { start, end } = monthRange(month);
     const [rows] = await getPool().query<RowDataPacket[]>(
       `SELECT type, SUM(amount_cop) AS total FROM transactions
        WHERE date >= ? AND date < ? GROUP BY type`,
       [start, end]
     );
-    const totals = { income: 0, expense: 0 };
+    const totals = { income: 0, expense: 0, payment: 0 };
     for (const row of rows) totals[row.type as TransactionType] = Number(row.total);
     return totals;
   }
 
-  static async totalsByCategory(month: string, type: TransactionType): Promise<CategoryTotal[]> {
+  static async totalsByCategory(month: string, type: 'income' | 'expense'): Promise<CategoryTotal[]> {
     const { start, end } = monthRange(month);
     const [rows] = await getPool().query<RowDataPacket[]>(
       `SELECT t.category_id, COALESCE(c.name, 'Sin categoría') AS category_name,
