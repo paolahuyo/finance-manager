@@ -21,6 +21,7 @@ const accountSchema = z.object({
   annual_rate: optionalNumber,
   credit_limit: optionalNumber,
   opening_balance: z.coerce.number().min(0).default(0),
+  balance_as_of: z.preprocess(v => (v === '' || v === undefined ? null : v), z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable()),
   notes: optionalText
 });
 
@@ -41,6 +42,7 @@ function parseBody(req: Request, res: Response): AccountInput | null {
     annual_rate: d.annual_rate,
     credit_limit: d.credit_limit,
     opening_balance: d.opening_balance,
+    balance_as_of: d.balance_as_of,
     notes: d.notes ?? null
   };
 }

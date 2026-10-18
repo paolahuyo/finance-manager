@@ -9,7 +9,7 @@ const CURRENCY_RE = /^(\d{8})\s+(\d{6})\s+(.+?)\s+(USD|COP)\s+\*+\s+\*+\s+([\d,]
 // Credits end with " - 123,456.78": card payments and refunds
 const CREDIT_RE = /^(\d{8})\s+(?:(\d{6})\s+)?(.+?)\s+-\s*([\d,]+\.\d{2})\s*$/;
 const MONEY_RE = /(?<![\d,.])\d{1,3}(?:,\d{3})*\.\d{2}(?!\d)/g;
-const DATE_DASH_RE = /\b(\d{2})-(\d{2})-(\d{4})\b/;
+const DATE_DASH_RE = /\b(\d{2})-(\d{2})-(\d{4})\b/g;
 
 const toNumber = (s: string): number => Number(s.replace(/,/g, ''));
 const isoFromCompact = (s: string): string => `${s.slice(4, 8)}-${s.slice(2, 4)}-${s.slice(0, 2)}`;
@@ -55,8 +55,14 @@ function parse(pages: StatementPages): ParsedStatement {
   const allRates: number[] = [];
 
   const flat = pages.flat();
-  const periodEndMatch = (pages[0] ?? []).join('\n').match(DATE_DASH_RE);
-  const periodEnd = periodEndMatch ? `${periodEndMatch[3]}-${periodEndMatch[2]}-${periodEndMatch[1]}` : null;
+  // The cut-off date is printed more than once on page 1 (the pay-by date once): take the most frequent.
+  const dateCounts = new Map<string, number>();
+  for (const m of (pages[0] ?? []).join('\n').matchAll(DATE_DASH_RE)) {
+    const iso = `${m[3]}-${m[2]}-${m[1]}`;
+    dateCounts.set(iso, (dateCounts.get(iso) ?? 0) + 1);
+  }
+  const periodEnd =
+    [...dateCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null;
 
   for (let i = 0; i < flat.length; i++) {
     const line = flat[i];

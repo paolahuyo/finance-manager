@@ -50,6 +50,7 @@ export async function initDb(): Promise<void> {
         annual_rate DECIMAL(6, 2) NULL,
         credit_limit DECIMAL(15, 2) NULL,
         opening_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+        balance_as_of DATE NULL,
         notes VARCHAR(255) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -63,6 +64,15 @@ export async function initDb(): Promise<void> {
         UNIQUE KEY uniq_category (name, type)
       )
     `);
+
+    // Date up to which opening_balance already reflects the movements (statement cut-off).
+    const [asOfCols] = await connection.query<RowDataPacket[]>(
+      `SELECT 1 FROM information_schema.columns
+       WHERE table_schema = DATABASE() AND table_name = 'accounts' AND column_name = 'balance_as_of'`
+    );
+    if (asOfCols.length === 0) {
+      await connection.query('ALTER TABLE accounts ADD COLUMN balance_as_of DATE NULL AFTER opening_balance');
+    }
 
     // amount_cop is the source of truth for every total. For foreign-currency
     // entries we keep the original amount and the rate used, for traceability.

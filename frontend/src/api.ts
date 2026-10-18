@@ -50,7 +50,7 @@ export const api = {
     (
       await http.post<ImportPreview>('/imports/preview', file, {
         params: { account_id: accountId },
-        headers: { 'Content-Type': 'application/pdf' }
+        headers: { 'Content-Type': file.type || 'application/octet-stream' }
       })
     ).data,
   commitImport: async (accountId: number, items: ImportItem[]): Promise<ImportResult> =>

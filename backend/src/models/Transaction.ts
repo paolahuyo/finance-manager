@@ -90,6 +90,15 @@ export class Transaction {
     return result.affectedRows ? this.findById(id) : undefined;
   }
 
+  /** Rows of one account in a date range, used to spot the same movement coming from another source. */
+  static async brief(accountId: number, startDate: string, endDate: string): Promise<{ type: TransactionType; date: string; amount_cop: number }[]> {
+    const [rows] = await getPool().query<RowDataPacket[]>(
+      'SELECT type, date, amount_cop FROM transactions WHERE account_id = ? AND date BETWEEN ? AND ?',
+      [accountId, startDate, endDate]
+    );
+    return rows.map(r => ({ type: r.type as TransactionType, date: r.date as string, amount_cop: Number(r.amount_cop) }));
+  }
+
   /** Hashes that were already imported, so previews can flag duplicates. */
   static async existingImportHashes(hashes: string[]): Promise<Set<string>> {
     if (hashes.length === 0) return new Set();

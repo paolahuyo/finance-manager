@@ -61,6 +61,7 @@ export interface Account {
   annual_rate: number | null;
   credit_limit: number | null;
   opening_balance: number;
+  balance_as_of: string | null;
   notes: string | null;
   balance: number;
   month_interest: number;
@@ -104,6 +105,7 @@ export interface ImportItem {
 }
 
 export interface ImportPreview {
+  format?: 'pdf' | 'excel';
   bank: string;
   period_start: string | null;
   period_end: string | null;

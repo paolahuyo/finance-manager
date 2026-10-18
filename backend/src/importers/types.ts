@@ -24,6 +24,8 @@ export interface AccountHint {
 }
 
 export interface ParsedStatement {
+  /** Where the data came from; PDF statements are the default. */
+  format?: 'pdf' | 'excel';
   bank: 'BBVA' | 'Nu' | 'Banco de Bogotá';
   period_start: string | null;
   period_end: string | null;

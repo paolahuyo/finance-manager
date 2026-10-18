@@ -6,8 +6,9 @@ import { Category } from '../models/Category';
 import { Transaction, TransactionInput } from '../models/Transaction';
 import { SUPPORTED_BANKS, parseStatement } from '../importers';
 import { suggestCategoryName } from '../importers/categorize';
+import { isXlsx, parseBbvaExcel } from '../importers/excel';
 import { extractPages } from '../importers/pdfText';
-import type { DraftItem } from '../importers';
+import type { DraftItem, ParsedStatement } from '../importers';
 
 const router: Router = express.Router();
 
@@ -29,7 +30,8 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const accountId = accountIdFrom(req);
-      if (accountId === null || !(await Account.findById(accountId))) {
+      const account = accountId === null ? undefined : await Account.findById(accountId);
+      if (accountId === null || !account) {
         res.status(400).json({ error: 'Elige la tarjeta a la que pertenece el extracto' });
         return;
       }
@@ -38,15 +40,15 @@ router.post(
         return;
       }
 
-      let parsed;
+      let parsed: ParsedStatement | null;
       try {
-        parsed = parseStatement(await extractPages(req.body));
+        parsed = isXlsx(req.body) ? await parseBbvaExcel(req.body) : parseStatement(await extractPages(req.body));
       } catch {
-        res.status(422).json({ error: 'No se pudo leer el archivo. ¿Es un PDF digital (no una foto)?' });
+        res.status(422).json({ error: 'No se pudo leer el archivo. Sube un PDF digital (no una foto) o un Excel de movimientos.' });
         return;
       }
       if (!parsed) {
-        res.status(422).json({ error: `No reconozco el formato de este extracto. Bancos soportados: ${SUPPORTED_BANKS.join(', ')}.` });
+        res.status(422).json({ error: `No reconozco el formato de este archivo. PDF de: ${SUPPORTED_BANKS.join(', ')}. Excel: movimientos de BBVA.` });
         return;
       }
 
@@ -72,12 +74,40 @@ router.post(
       });
 
       const existing = await Transaction.existingImportHashes(withHash.map(i => i.import_hash));
+
+      // The same movement can arrive from a PDF and from an Excel with slightly different text, so also
+      // compare by type + date + amount against what the card already has (as a multiset: two equal
+      // purchases on one day need two existing rows to both count as duplicates).
+      const dates = withHash.map(i => i.date).sort();
+      const known = new Map<string, number>();
+      if (dates.length) {
+        for (const row of await Transaction.brief(accountId, dates[0], dates[dates.length - 1])) {
+          const key = `${row.type}|${row.date}|${row.amount_cop.toFixed(2)}`;
+          known.set(key, (known.get(key) ?? 0) + 1);
+        }
+      }
       const items = withHash.map(i => {
-        const duplicate = existing.has(i.import_hash);
-        return { ...i, duplicate, selected: i.selected && !duplicate };
+        let duplicate = existing.has(i.import_hash);
+        let note = i.note;
+        if (!duplicate && (i.kind === 'purchase' || i.kind === 'payment' || i.kind === 'credit')) {
+          const key = `${i.kind === 'purchase' ? 'expense' : 'payment'}|${i.date}|${i.amount_cop.toFixed(2)}`;
+          const left = known.get(key) ?? 0;
+          if (left > 0) {
+            known.set(key, left - 1);
+            duplicate = true;
+            note = 'Ya registrado: misma fecha y monto que un movimiento de esta tarjeta.';
+          }
+        }
+        // Movements before the date the opening balance was taken are already inside that balance.
+        if (!duplicate && account.balance_as_of && i.date < account.balance_as_of) {
+          duplicate = true;
+          note = `Anterior al corte del ${account.balance_as_of}: ya está incluido en el saldo de la tarjeta.`;
+        }
+        return { ...i, note, duplicate, selected: i.selected && !duplicate };
       });
 
       res.json({
+        format: parsed.format ?? 'pdf',
         bank: parsed.bank,
         period_start: parsed.period_start,
         period_end: parsed.period_end,

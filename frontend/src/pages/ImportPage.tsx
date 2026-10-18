@@ -76,9 +76,9 @@ export default function ImportPage({ accounts, categories, onImported }: ImportP
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-        <h2 className="text-xl font-bold">Importar extracto</h2>
+        <h2 className="text-xl font-bold">Importar extracto o movimientos</h2>
         <p className="text-sm text-gray-600">
-          Sube el PDF digital del extracto de tu tarjeta. Primero verás una lista para revisar; nada se guarda hasta
+          Sube el PDF digital del extracto de tu tarjeta, o el Excel de movimientos de BBVA. Primero verás una lista para revisar; nada se guarda hasta
           que confirmes. El archivo se analiza en tu computador y no se almacena.
         </p>
         <div className="flex flex-wrap items-center gap-3">
@@ -100,8 +100,8 @@ export default function ImportPage({ accounts, categories, onImported }: ImportP
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {busy ? 'Leyendo…' : '2. Subir PDF'}
-            <input type="file" accept="application/pdf,.pdf" className="sr-only" disabled={!accountId || busy} onChange={handleFile} />
+            {busy ? 'Leyendo…' : '2. Subir PDF o Excel'}
+            <input type="file" accept="application/pdf,.pdf,.xlsx" className="sr-only" disabled={!accountId || busy} onChange={handleFile} />
           </label>
         </div>
         {accounts.length === 0 && (
@@ -116,7 +116,7 @@ export default function ImportPage({ accounts, categories, onImported }: ImportP
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6 border-b space-y-2">
             <h3 className="text-lg font-bold">
-              Extracto {preview.bank}
+              {preview.format === 'excel' ? 'Movimientos' : 'Extracto'} {preview.bank}
               {preview.period_start && preview.period_end
                 ? ` · ${formatLongDay(preview.period_start)} – ${formatLongDay(preview.period_end)}`
                 : preview.period_end
@@ -167,8 +167,8 @@ export default function ImportPage({ accounts, categories, onImported }: ImportP
                         {item.original_currency === 'USD' && item.original_amount !== undefined && (
                           <p className="text-xs text-gray-500">USD {item.original_amount.toFixed(2)}</p>
                         )}
-                        {item.note && <p className="text-xs text-amber-700">{item.note}</p>}
-                        {item.duplicate && <p className="text-xs">Ya importado antes</p>}
+                        {item.note && <p className={`text-xs ${item.duplicate ? '' : 'text-amber-700'}`}>{item.note}</p>}
+                        {item.duplicate && !item.note && <p className="text-xs">Ya importado antes</p>}
                       </td>
                       <td className="px-3 py-2">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${kind.className}`}>{kind.text}</span>
