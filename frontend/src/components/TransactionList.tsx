@@ -4,6 +4,7 @@ import { formatCOP, formatDay, formatLongDay, formatUSD } from '../utils/format'
 interface TransactionListProps {
   transactions: Transaction[];
   onDelete: (id: number) => void;
+  onEdit: (tx: Transaction) => void;
 }
 
 const TYPE_STYLE = {
@@ -12,7 +13,7 @@ const TYPE_STYLE = {
   payment: { color: 'text-blue-600', sign: '→ ' }
 } as const;
 
-export default function TransactionList({ transactions, onDelete }: TransactionListProps): JSX.Element {
+export default function TransactionList({ transactions, onDelete, onEdit }: TransactionListProps): JSX.Element {
   if (transactions.length === 0) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md text-center text-gray-500">
@@ -49,6 +50,13 @@ export default function TransactionList({ transactions, onDelete }: TransactionL
                 <span className={`font-semibold ${style.color}`}>
                   {style.sign}{formatCOP(tx.amount_cop)}
                 </span>
+                <button
+                  onClick={() => onEdit(tx)}
+                  className="text-sm text-gray-400 hover:text-blue-600"
+                  aria-label={`Editar ${tx.description}`}
+                >
+                  Editar
+                </button>
                 <button
                   onClick={() => onDelete(tx.id)}
                   className="text-sm text-gray-400 hover:text-red-600"

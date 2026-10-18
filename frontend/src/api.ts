@@ -20,6 +20,8 @@ export const api = {
     (await http.get<Transaction[]>('/transactions', { params: { month } })).data,
   createTransaction: async (payload: TransactionPayload): Promise<Transaction> =>
     (await http.post<Transaction>('/transactions', payload)).data,
+  updateTransaction: async (id: number, payload: TransactionPayload): Promise<Transaction> =>
+    (await http.put<Transaction>(`/transactions/${id}`, payload)).data,
   deleteTransaction: async (id: number): Promise<void> => {
     await http.delete(`/transactions/${id}`);
   },

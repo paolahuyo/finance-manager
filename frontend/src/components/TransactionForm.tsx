@@ -1,5 +1,5 @@
 import { useEffect, useState, FormEvent } from 'react';
-import type { Account, Category, Currency, TransactionPayload, TransactionType } from '../types';
+import type { Account, Category, Currency, Transaction, TransactionPayload, TransactionType } from '../types';
 import { api } from '../api';
 import { formatCOP, formatLongDay, todayISO } from '../utils/format';
 
@@ -7,6 +7,9 @@ interface TransactionFormProps {
   categories: Category[];
   accounts: Account[];
   onSubmit: (payload: TransactionPayload) => Promise<void>;
+  /** Movement being edited; the parent remounts the form (key) when it changes. */
+  initial?: Transaction | null;
+  onCancel?: () => void;
 }
 
 const TYPE_OPTIONS: ReadonlyArray<{ value: TransactionType; label: string; active: string }> = [
@@ -22,22 +25,25 @@ const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
 export default function TransactionForm({
   categories,
   accounts,
-  onSubmit
+  onSubmit,
+  initial,
+  onCancel
 }: TransactionFormProps): JSX.Element {
-  const [type, setType] = useState<TransactionType>('expense');
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState<Currency>('COP');
-  const [rate, setRate] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [accountId, setAccountId] = useState('');
-  const [date, setDate] = useState(todayISO());
+  const editing = !!initial;
+  const [type, setType] = useState<TransactionType>(initial?.type ?? 'expense');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [amount, setAmount] = useState(initial ? String(initial.original_amount) : '');
+  const [currency, setCurrency] = useState<Currency>(initial?.original_currency ?? 'COP');
+  const [rate, setRate] = useState(initial?.original_currency === 'USD' ? String(initial.exchange_rate) : '');
+  const [categoryId, setCategoryId] = useState(initial?.category_id ? String(initial.category_id) : '');
+  const [accountId, setAccountId] = useState(initial?.account_id ? String(initial.account_id) : '');
+  const [date, setDate] = useState(initial?.date ?? todayISO());
   const [saving, setSaving] = useState(false);
 
   // The rate follows the transaction date until the user picks a different "rate date".
-  const [rateDate, setRateDate] = useState(todayISO());
+  const [rateDate, setRateDate] = useState(initial?.date ?? todayISO());
   const [rateDateTouched, setRateDateTouched] = useState(false);
-  const [rateManual, setRateManual] = useState(false);
+  const [rateManual, setRateManual] = useState(initial?.original_currency === 'USD');
   const [rateNote, setRateNote] = useState('');
 
   useEffect(() => {
@@ -96,9 +102,11 @@ export default function TransactionForm({
         account_id: accountId ? Number(accountId) : null,
         date
       });
-      setDescription('');
-      setAmount('');
-      setRateManual(false);
+      if (!editing) {
+        setDescription('');
+        setAmount('');
+        setRateManual(false);
+      }
     } catch {
       // The parent shows the error; keep the form filled so nothing is lost.
     } finally {
@@ -108,7 +116,7 @@ export default function TransactionForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-4">
-      <h2 className="text-xl font-bold">Nuevo movimiento</h2>
+      <h2 className="text-xl font-bold">{editing ? 'Editar movimiento' : 'Nuevo movimiento'}</h2>
 
       <div className="grid grid-cols-3 gap-2" role="group" aria-label="Tipo de movimiento">
         {TYPE_OPTIONS.map(option => (
@@ -278,8 +286,13 @@ export default function TransactionForm({
         disabled={saving}
         className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 font-medium disabled:opacity-60"
       >
-        {saving ? 'Guardando…' : 'Agregar'}
+        {saving ? 'Guardando…' : editing ? 'Guardar cambios' : 'Agregar'}
       </button>
+      {editing && onCancel && (
+        <button type="button" onClick={onCancel} className="w-full text-sm text-gray-600 hover:underline">
+          Cancelar
+        </button>
+      )}
     </form>
   );
 }

@@ -89,6 +89,19 @@ function App(): JSX.Element {
     }
   };
 
+  const handleUpdate = async (id: number, payload: TransactionPayload): Promise<void> => {
+    try {
+      await api.updateTransaction(id, payload);
+      setError('');
+      const entryMonth = payload.date.slice(0, 7);
+      if (entryMonth !== month) setMonth(entryMonth);
+      else await refresh();
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo guardar el movimiento'));
+      throw err;
+    }
+  };
+
   const handleCreateAccount = async (payload: AccountPayload): Promise<void> => {
     try {
       await api.createAccount(payload);
@@ -161,6 +174,7 @@ function App(): JSX.Element {
             transactions={transactions}
             loading={loading}
             onCreate={handleCreate}
+            onUpdate={handleUpdate}
             onDelete={handleDelete}
           />
         )}
