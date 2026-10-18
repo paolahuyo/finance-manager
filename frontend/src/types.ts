@@ -154,3 +154,10 @@ export interface UpcomingPayment {
   due_cutoff: string | null;
   paid_since_cutoff: number;
 }
+
+export interface CardInstallments {
+  account_id: number;
+  account_name: string;
+  cutoff: string;
+  rows: InstallmentRow[];
+}

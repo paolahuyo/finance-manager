@@ -1,4 +1,4 @@
-import type { DraftItem, ParsedStatement, StatementPages, StatementReader } from './types';
+import type { DraftItem, InstallmentRow, ParsedStatement, StatementPages, StatementReader } from './types';
 
 const MONTHS: Record<string, number> = {
   ENE: 1, FEB: 2, MAR: 3, ABR: 4, MAY: 5, JUN: 6, JUL: 7, AGO: 8, SEP: 9, SEPT: 9, OCT: 10, NOV: 11, DIC: 12
@@ -28,6 +28,7 @@ function parse(pages: StatementPages): ParsedStatement {
   let skipped = 0;
   let feeLinesTotal = 0;
   let rate: number | null = null;
+  const installments: InstallmentRow[] = [];
 
   const periodMatch = text.match(PERIOD_RE);
   const periodStart = periodMatch ? iso(Number(periodMatch[3]), monthOf(periodMatch[2]) ?? 1, Number(periodMatch[1])) : null;
@@ -47,6 +48,24 @@ function parse(pages: StatementPages): ParsedStatement {
     const amount = toNumber(m[6].trim().split(/\s+/)[0]);
     const lineRate = toNumber(m[8]);
     if (lineRate > 0) rate = lineRate;
+    // Installment table: "pending/total" installments; 3 amounts = original, installment, remaining.
+    if (m[7] && !isFee(description) && !isPayment(description)) {
+      const [pendingCount, totalCount] = m[7].split('/').map(Number);
+      const amounts = m[6].trim().split(/\s+/).map(toNumber);
+      const installmentValue = amounts[1] ?? amounts[0];
+      const remaining = amounts.length >= 3 ? amounts[2] : 0;
+      installments.push({
+        purchase_date: date,
+        description,
+        original_value: amounts[0],
+        installment_no: Math.max(totalCount - pendingCount, 0),
+        installments_total: totalCount,
+        balance_before: round2(remaining + installmentValue),
+        capital_paid: installmentValue,
+        balance_after: remaining,
+        rate: lineRate
+      });
+    }
     const inPeriod = !!periodStart && !!periodEnd && date >= periodStart && date <= periodEnd;
     if (!inPeriod) {
       skipped++;
@@ -108,7 +127,8 @@ function parse(pages: StatementPages): ParsedStatement {
       due_date: payBy ? iso(Number(payBy[3]), monthOf(payBy[2].toUpperCase()) ?? 1, Number(payBy[1])) : null,
       minimum_payment: labelled('Pago mínimo'),
       total_payment: totalDue
-    }
+    },
+    installments
   };
 }
 

@@ -77,6 +77,14 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+router.get('/installments', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await Installment.latestForAll());
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/upcoming', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     res.json(await Account.upcomingPayments());

@@ -16,6 +16,29 @@ export interface InstallmentDetail {
 }
 
 export class Installment {
+  /** Latest installment table of every card that has one. */
+  static async latestForAll(): Promise<{ account_id: number; account_name: string; cutoff: string; rows: InstallmentDetail[] }[]> {
+    const [rows] = await getPool().query<RowDataPacket[]>(
+      `SELECT s.account_id, a.name AS account_name, s.cutoff, s.purchase_date, s.description, s.original_value,
+              s.installment_no, s.installments_total, s.balance_before, s.capital_paid, s.balance_after, s.rate
+       FROM statement_installments s
+       JOIN accounts a ON a.id = s.account_id
+       WHERE s.cutoff = (SELECT MAX(x.cutoff) FROM statement_installments x WHERE x.account_id = s.account_id)
+       ORDER BY a.name, s.balance_after DESC`
+    );
+    const byAccount = new Map<number, { account_id: number; account_name: string; cutoff: string; rows: InstallmentDetail[] }>();
+    for (const r of rows) {
+      const id = r.account_id as number;
+      if (!byAccount.has(id)) byAccount.set(id, { account_id: id, account_name: r.account_name as string, cutoff: r.cutoff as string, rows: [] });
+      byAccount.get(id)!.rows.push({
+        purchase_date: r.purchase_date, description: r.description, original_value: Number(r.original_value),
+        installment_no: r.installment_no, installments_total: r.installments_total, balance_before: Number(r.balance_before),
+        capital_paid: Number(r.capital_paid), balance_after: Number(r.balance_after), rate: Number(r.rate)
+      });
+    }
+    return [...byAccount.values()];
+  }
+
   /** Installment table of the most recent statement stored for this card. */
   static async latest(accountId: number): Promise<{ cutoff: string; rows: InstallmentDetail[] } | null> {
     const [cut] = await getPool().query<RowDataPacket[]>(

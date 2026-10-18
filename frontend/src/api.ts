@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
+import type { CardInstallments, UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
 
 const http = axios.create({ baseURL: '/api' });
 
@@ -38,6 +38,8 @@ export const api = {
 
   accounts: async (month: string): Promise<Account[]> =>
     (await http.get<Account[]>('/accounts', { params: { month } })).data,
+  installmentsByCard: async (): Promise<CardInstallments[]> =>
+    (await http.get<CardInstallments[]>('/accounts/installments')).data,
   upcomingPayments: async (): Promise<UpcomingPayment[]> =>
     (await http.get<UpcomingPayment[]>('/accounts/upcoming')).data,
   accountDetail: async (id: number, month: string): Promise<AccountDetail> =>

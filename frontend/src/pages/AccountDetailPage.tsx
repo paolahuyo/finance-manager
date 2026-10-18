@@ -3,6 +3,7 @@ import type { InstallmentRow } from '../types';
 import { api, errorMessage } from '../api';
 import type { AccountDetail, Transaction } from '../types';
 import { formatCOP, formatLongDay } from '../utils/format';
+import { monthlyInterest } from '../utils/interest';
 import SummaryCard from '../components/SummaryCard';
 
 interface AccountDetailPageProps {
@@ -19,12 +20,6 @@ const TYPE_STYLE = {
 } as const;
 const th = 'px-3 py-2 text-left text-xs font-medium text-gray-600 whitespace-nowrap';
 const td = 'px-3 py-2 text-sm whitespace-nowrap';
-
-/** Interest one month of this balance would generate at the purchase's effective annual rate. */
-function monthlyInterest(r: InstallmentRow): number {
-  if (r.rate <= 0 || r.balance_after <= 0) return 0;
-  return r.balance_after * (Math.pow(1 + r.rate / 100, 1 / 12) - 1);
-}
 
 function LinkedPurchase({ tx }: { tx: Transaction }): JSX.Element {
   if (!tx.linked_purchase) return <span className="text-gray-400">Sin cruzar</span>;

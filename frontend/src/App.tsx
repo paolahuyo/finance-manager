@@ -5,6 +5,7 @@ import { currentMonth } from './utils/format';
 import Header from './components/Header';
 import MonthNavigator from './components/MonthNavigator';
 import UpcomingPayments from './components/UpcomingPayments';
+import InterestBreakdown from './components/InterestBreakdown';
 import AccountsPage from './pages/AccountsPage';
 import AccountDetailPage from './pages/AccountDetailPage';
 import ImportPage from './pages/ImportPage';
@@ -169,6 +170,9 @@ function App(): JSX.Element {
             onDelete={handleDeleteAccount}
             onOpen={setOpenAccountId}
           />
+        )}
+        {tab === 'accounts' && openAccountId === null && (
+          <InterestBreakdown refreshKey={accounts} onOpen={setOpenAccountId} />
         )}
       </main>
     </div>

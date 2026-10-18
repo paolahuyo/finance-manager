@@ -1,12 +1,13 @@
-import type { DraftItem, ParsedStatement, StatementPages, StatementReader } from './types';
+import type { DraftItem, InstallmentRow, ParsedStatement, StatementPages, StatementReader } from './types';
 
 const MONTHS: Record<string, number> = {
   ENE: 1, FEB: 2, MAR: 3, ABR: 4, MAY: 5, JUN: 6, JUL: 7, AGO: 8, SEP: 9, SEPT: 9, OCT: 10, NOV: 11, DIC: 12
 };
 
 // DD MON [YYYY]  description  $total  N de M  $installment  rate%  $interest  $due  $remaining
+// groups: 1 day, 2 month, 3 year, 4 description, 5 total, 6 N, 7 M, 8 installment, 9 monthly rate, 10 interest, 11 due, 12 remaining
 const PURCHASE_RE =
-  /^(\d{2}) ([A-ZÁÉ]{3,4})(?: (\d{4}))?\s+(.+?)\s+\$([\d.]+,\d{2})\s+(\d+) de (\d+)\s+\$[\d.]+,\d{2}\s+(\d+(?:\.\d+)?)%\s+\$[\d.]+,\d{2}\s+\$[\d.]+,\d{2}\s+\$[\d.]+,\d{2}\s*$/;
+  /^(\d{2}) ([A-ZÁÉ]{3,4})(?: (\d{4}))?\s+(.+?)\s+\$([\d.]+,\d{2})\s+(\d+) de (\d+)\s+\$([\d.]+,\d{2})\s+(\d+(?:\.\d+)?)%\s+\$([\d.]+,\d{2})\s+\$([\d.]+,\d{2})\s+\$([\d.]+,\d{2})\s*$/;
 const PAYMENT_RE = /^(\d{2}) ([A-ZÁÉ]{3,4})(?: (\d{4}))?\s+Pago\s+\$([\d.]+,\d{2})/;
 const FEE_RE = /↪\s*Comisión por cambio de moneda\s+\$([\d.]+,\d{2})/i;
 const PERIOD_RE = /(\d{2}) ([A-ZÁÉ]{3,4}) (\d{4}) - (\d{2}) ([A-ZÁÉ]{3,4}) (\d{4})/;
@@ -50,6 +51,7 @@ function parse(pages: StatementPages): ParsedStatement {
 
   let lastPurchaseIsNew = false;
   let monthlyRate: number | null = null;
+  const installments: InstallmentRow[] = [];
   let lastPurchaseDesc = '';
   let feesSum = 0;
 
@@ -60,7 +62,23 @@ function parse(pages: StatementPages): ParsedStatement {
     if (purchase) {
       const date = resolveDate(i, purchase[1], purchase[2], purchase[3]);
       lastPurchaseDesc = cleanDescription(purchase[4]);
-      if (monthlyRate === null && Number(purchase[8]) > 0) monthlyRate = Number(purchase[8]);
+      if (monthlyRate === null && Number(purchase[9]) > 0) monthlyRate = Number(purchase[9]);
+      if (date) {
+        const remaining = toNumber(purchase[12]);
+        const installment = toNumber(purchase[8]);
+        installments.push({
+          purchase_date: date,
+          description: lastPurchaseDesc,
+          original_value: toNumber(purchase[5]),
+          installment_no: Number(purchase[6]),
+          installments_total: Number(purchase[7]),
+          balance_before: round2(remaining + installment),
+          capital_paid: installment,
+          balance_after: remaining,
+          // Nu prints the monthly rate (M.V.); keep the effective annual rate like the other banks.
+          rate: round2((Math.pow(1 + Number(purchase[9]) / 100, 12) - 1) * 100)
+        });
+      }
       lastPurchaseIsNew = !!date && inPeriod(date);
       if (!date || !lastPurchaseIsNew) {
         skipped++;
@@ -173,7 +191,8 @@ function parse(pages: StatementPages): ParsedStatement {
       due_date: dueDate,
       minimum_payment: minimum ? toNumber(minimum[1]) : null,
       total_payment: debt ? toNumber(debt[1]) : null
-    }
+    },
+    installments
   };
 }
 
