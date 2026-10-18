@@ -5,15 +5,17 @@ import { currentMonth } from './utils/format';
 import Header from './components/Header';
 import MonthNavigator from './components/MonthNavigator';
 import AccountsPage from './pages/AccountsPage';
+import ImportPage from './pages/ImportPage';
 import SummaryPage from './pages/SummaryPage';
 import TransactionsPage from './pages/TransactionsPage';
 
-type Tab = 'summary' | 'transactions' | 'accounts';
+type Tab = 'summary' | 'transactions' | 'accounts' | 'import';
 
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: 'summary', label: 'Resumen' },
   { id: 'transactions', label: 'Movimientos' },
-  { id: 'accounts', label: 'Tarjetas' }
+  { id: 'accounts', label: 'Tarjetas' },
+  { id: 'import', label: 'Importar' }
 ];
 
 function App(): JSX.Element {
@@ -148,6 +150,7 @@ function App(): JSX.Element {
             onDelete={handleDelete}
           />
         )}
+        {tab === 'import' && <ImportPage accounts={accounts} categories={categories} onImported={refresh} />}
         {tab === 'accounts' && (
           <AccountsPage
             month={month}

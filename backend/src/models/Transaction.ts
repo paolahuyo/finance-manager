@@ -90,6 +90,30 @@ export class Transaction {
     return result.affectedRows ? this.findById(id) : undefined;
   }
 
+  /** Hashes that were already imported, so previews can flag duplicates. */
+  static async existingImportHashes(hashes: string[]): Promise<Set<string>> {
+    if (hashes.length === 0) return new Set();
+    const [rows] = await getPool().query<RowDataPacket[]>(
+      'SELECT import_hash FROM transactions WHERE import_hash IN (?)',
+      [hashes]
+    );
+    return new Set(rows.map(r => r.import_hash as string));
+  }
+
+  /** Inserts one imported row; returns false when the same hash already exists. */
+  static async createImported(data: TransactionInput, importHash: string): Promise<boolean> {
+    const [result] = await getPool().query<ResultSetHeader>(
+      `INSERT IGNORE INTO transactions
+        (type, description, amount_cop, original_amount, original_currency, exchange_rate, category_id, account_id, date, import_hash)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.type, data.description, data.amount_cop, data.original_amount, data.original_currency,
+        data.exchange_rate, data.category_id, data.account_id, data.date, importHash
+      ]
+    );
+    return result.affectedRows > 0;
+  }
+
   static async delete(id: number): Promise<boolean> {
     const [result] = await getPool().query<ResultSetHeader>(
       'DELETE FROM transactions WHERE id = ?',

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Account, AccountPayload, Category, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
+import type { Account, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
 
 const http = axios.create({ baseURL: '/api' });
 
@@ -43,5 +43,16 @@ export const api = {
   },
   deleteAccount: async (id: number): Promise<void> => {
     await http.delete(`/accounts/${id}`);
-  }
+  },
+
+  /** Sends the PDF as the raw request body; the server analyses it in memory and does not store it. */
+  previewImport: async (accountId: number, file: File): Promise<ImportPreview> =>
+    (
+      await http.post<ImportPreview>('/imports/preview', file, {
+        params: { account_id: accountId },
+        headers: { 'Content-Type': 'application/pdf' }
+      })
+    ).data,
+  commitImport: async (accountId: number, items: ImportItem[]): Promise<ImportResult> =>
+    (await http.post<ImportResult>('/imports/commit', { account_id: accountId, items })).data
 };

@@ -77,8 +77,10 @@ export async function initDb(): Promise<void> {
         exchange_rate DECIMAL(12, 4) NOT NULL DEFAULT 1,
         category_id INT NULL,
         account_id INT NULL,
+        import_hash CHAR(64) NULL,
         date DATE NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_import_hash (import_hash),
         INDEX idx_date (date),
         INDEX idx_account (account_id),
         CONSTRAINT fk_transaction_category FOREIGN KEY (category_id)
@@ -104,6 +106,17 @@ export async function initDb(): Promise<void> {
           ADD CONSTRAINT fk_transaction_account FOREIGN KEY (account_id)
             REFERENCES accounts(id) ON DELETE SET NULL
       `);
+    }
+
+    // Statement imports tag each row with a hash so re-importing the same file cannot duplicate it.
+    const [hashCols] = await connection.query<RowDataPacket[]>(
+      `SELECT 1 FROM information_schema.columns
+       WHERE table_schema = DATABASE() AND table_name = 'transactions' AND column_name = 'import_hash'`
+    );
+    if (hashCols.length === 0) {
+      await connection.query(
+        'ALTER TABLE transactions ADD COLUMN import_hash CHAR(64) NULL, ADD UNIQUE KEY uniq_import_hash (import_hash)'
+      );
     }
 
     await connection.query(

@@ -85,3 +85,34 @@ export interface TrmInfo {
   /** False when the requested date had no published TRM and the latest earlier one was used. */
   exact: boolean;
 }
+
+export type ImportKind = 'purchase' | 'interest' | 'fee' | 'payment' | 'credit';
+
+export interface ImportItem {
+  import_hash: string;
+  date: string;
+  description: string;
+  amount_cop: number;
+  kind: ImportKind;
+  category_id: number | null;
+  original_amount?: number;
+  original_currency?: 'USD';
+  exchange_rate?: number;
+  note?: string;
+  duplicate: boolean;
+  selected: boolean;
+}
+
+export interface ImportPreview {
+  bank: string;
+  period_start: string | null;
+  period_end: string | null;
+  skipped_installments: number;
+  warnings: string[];
+  items: ImportItem[];
+}
+
+export interface ImportResult {
+  inserted: number;
+  skipped_duplicates: number;
+}

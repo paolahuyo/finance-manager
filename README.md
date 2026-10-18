@@ -8,7 +8,9 @@ Personal finance app: track monthly income, expenses and debts in **Colombian pe
 - **Transactions** — income and expenses with categories. Amounts in **USD are converted to COP** using the official **TRM of the date you choose** (editable); the original amount and the rate used are kept for traceability.
 - **Cards & debts** — each credit card or loan is an account with its balance, annual rate (E.A.) and limit. Record the card used on each expense and the **payments (abonos)** you make. Payments lower the balance but are *not* counted as expenses; **interest and fees are**, so the app shows how much interest each card charged this month and this year.
 
-Planned: import of card statements (Excel and text-based PDF) with a review step, budgets and charts, payoff strategies (snowball / avalanche).
+- **Statement import** — upload the digital PDF of a card statement (BBVA, Nu and Banco de Bogotá supported). You review a draft list (purchases, interest, fees, payments) and confirm; nothing is saved automatically. Re-importing the same file never duplicates rows. Interest and fees are tracked separately, and installments of older purchases are skipped because they were already counted.
+
+Planned: Excel import, AV Villas reader, budgets and charts, payoff strategies (snowball / avalanche).
 
 ## Stack
 
@@ -44,7 +46,17 @@ finance-manager/
 | `PUT/DELETE /api/transactions/:id` | Edit / remove |
 | `GET /api/categories` | Income and expense categories |
 | `GET /api/exchange-rate?date=YYYY-MM-DD` | Official TRM in force on that day (Superfinanciera open data). Without `date`: market reference rate |
+| `POST /api/imports/preview?account_id=` | Raw PDF body → draft movements (analysed in memory, never stored) |
+| `POST /api/imports/commit` | Saves the reviewed draft; duplicates are skipped by hash |
 | `GET/POST/PUT/DELETE /api/accounts` | Cards and debts, with balance and interest stats for `?month=` |
+
+## Tests
+
+```bash
+cd backend && npm test
+```
+
+The statement readers are tested with invented data that only mimics the structure of real statements. To inspect real PDFs safely, `npm run mask-statement` extracts and masks their text locally.
 
 ## Privacy
 
