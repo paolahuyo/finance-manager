@@ -11,7 +11,8 @@ const EMPTY: AccountPayload = {
   kind: 'credit_card',
   annual_rate: '',
   credit_limit: '',
-  opening_balance: ''
+  opening_balance: '',
+  allows_directed_payments: false
 };
 
 const inputClass =
@@ -86,6 +87,12 @@ export default function AccountForm({ onSubmit }: AccountFormProps): JSX.Element
           Lo que debes hoy. Desde aquí se suman tus compras y se restan tus abonos.
         </p>
       </div>
+
+      <label className="flex items-center gap-2 text-sm text-gray-700">
+        <input type="checkbox" checked={form.allows_directed_payments}
+          onChange={e => set('allows_directed_payments', e.target.checked)} />
+        El banco permite abonar a una compra específica
+      </label>
 
       <button type="submit" disabled={saving}
         className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 font-medium disabled:opacity-60">

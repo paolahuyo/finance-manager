@@ -86,4 +86,4 @@ Las pruebas usan `node:test` con `ts-node` (`src/**/*.test.ts`).
 
 ## Trabajo pendiente documentado
 
-- `docs/plan-de-pagos.md` — especificación del generador de plan de pagos (siguiente funcionalidad).
+- `docs/plan-de-pagos.md` — especificación del generador de plan de pagos (implementado en `backend/src/services/paymentPlan.ts`, `POST /api/plan`, pestaña «Plan de pagos»).

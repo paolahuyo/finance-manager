@@ -86,7 +86,9 @@ export async function initDb(): Promise<void> {
       ['due_date', 'DATE NULL'],
       ['minimum_payment', 'DECIMAL(15, 2) NULL'],
       ['total_payment', 'DECIMAL(15, 2) NULL'],
-      ['due_cutoff', 'DATE NULL']
+      ['due_cutoff', 'DATE NULL'],
+      // Whether the bank lets you pay a specific purchase (BBVA does); used by the payment plan.
+      ['allows_directed_payments', 'TINYINT(1) NOT NULL DEFAULT 0']
     ]) {
       const [cols] = await connection.query<RowDataPacket[]>(
         `SELECT 1 FROM information_schema.columns

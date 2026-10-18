@@ -84,6 +84,19 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
           {account.balance_as_of ? ` · saldo tomado del extracto con corte ${formatLongDay(account.balance_as_of)}` : ''}
           {account.notes ? ` · ${account.notes}` : ''}
         </p>
+        <label className="flex items-center gap-2 text-sm text-gray-700 mt-1">
+          <input
+            type="checkbox"
+            checked={account.allows_directed_payments}
+            onChange={e =>
+              api
+                .setDirectedPayments(account, e.target.checked)
+                .then(() => setDetail({ ...detail, account: { ...account, allows_directed_payments: e.target.checked } }))
+                .catch(err => setError(errorMessage(err, 'No se pudo guardar el cambio')))
+            }
+          />
+          El banco permite abonar a una compra específica (se usa en el plan de pagos)
+        </label>
         <p className="text-sm text-gray-600">
           En el año: intereses {formatCOP(account.year_interest)} · manejo, seguros y comisiones {formatCOP(account.year_fees)}
         </p>

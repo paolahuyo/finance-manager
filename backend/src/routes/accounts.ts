@@ -33,6 +33,7 @@ const accountSchema = z.object({
   minimum_payment: optionalAmount,
   total_payment: optionalAmount,
   due_cutoff: optionalDate,
+  allows_directed_payments: z.boolean().optional(),
   notes: optionalText
 });
 
@@ -58,6 +59,7 @@ function parseBody(req: Request, res: Response, current?: AccountInput): Account
     minimum_payment: d.minimum_payment === undefined ? current?.minimum_payment ?? null : d.minimum_payment,
     total_payment: d.total_payment === undefined ? current?.total_payment ?? null : d.total_payment,
     due_cutoff: d.due_cutoff === undefined ? current?.due_cutoff ?? null : d.due_cutoff,
+    allows_directed_payments: d.allows_directed_payments ?? current?.allows_directed_payments ?? false,
     notes: d.notes ?? null
   };
 }

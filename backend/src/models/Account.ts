@@ -28,6 +28,7 @@ export interface IAccount {
   minimum_payment: number | null;
   total_payment: number | null;
   due_cutoff: string | null;
+  allows_directed_payments: boolean;
   notes: string | null;
 }
 
@@ -43,6 +44,7 @@ export interface AccountInput {
   minimum_payment: number | null;
   total_payment: number | null;
   due_cutoff: string | null;
+  allows_directed_payments: boolean;
   notes: string | null;
 }
 
@@ -72,14 +74,16 @@ export interface IAccountStats extends IAccount {
 }
 
 const COLUMNS =
-  'id, name, bank, kind, annual_rate, credit_limit, opening_balance, balance_as_of, due_date, minimum_payment, total_payment, due_cutoff, notes';
+  'id, name, bank, kind, annual_rate, credit_limit, opening_balance, balance_as_of, due_date, minimum_payment, total_payment, due_cutoff, allows_directed_payments, notes';
+
+const toAccount = (r: RowDataPacket): IAccount => ({ ...(r as IAccount), allows_directed_payments: !!r.allows_directed_payments });
 
 export class Account {
   static async findAll(): Promise<IAccount[]> {
     const [rows] = await getPool().query<RowDataPacket[]>(
       `SELECT ${COLUMNS} FROM accounts ORDER BY kind, name`
     );
-    return rows as IAccount[];
+    return rows.map(toAccount);
   }
 
   static async findById(id: number): Promise<IAccount | undefined> {
@@ -87,7 +91,7 @@ export class Account {
       `SELECT ${COLUMNS} FROM accounts WHERE id = ?`,
       [id]
     );
-    return rows[0] as IAccount | undefined;
+    return rows[0] ? toAccount(rows[0]) : undefined;
   }
 
   /** Accounts with their balance and the interest/payments of `month` (YYYY-MM). */
@@ -96,7 +100,7 @@ export class Account {
     const yearStart = `${month.slice(0, 4)}-01-01`;
     const [rows] = await getPool().query<RowDataPacket[]>(
       `SELECT a.id, a.name, a.bank, a.kind, a.annual_rate, a.credit_limit, a.opening_balance, a.balance_as_of,
-         a.due_date, a.minimum_payment, a.total_payment, a.due_cutoff, a.notes,
+         a.due_date, a.minimum_payment, a.total_payment, a.due_cutoff, a.allows_directed_payments, a.notes,
          a.opening_balance
            + COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount_cop
                                WHEN t.type = 'payment' THEN -t.amount_cop END), 0) AS balance,
@@ -119,7 +123,7 @@ export class Account {
        [...FEE_CATEGORIES], start, end, [...FEE_CATEGORIES], yearStart, end]
     );
     return rows.map(r => ({
-      ...(r as IAccount),
+      ...toAccount(r),
       balance: Number(r.balance),
       month_interest: Number(r.month_interest),
       year_interest: Number(r.year_interest),
@@ -132,10 +136,10 @@ export class Account {
   static async create(data: AccountInput): Promise<IAccount> {
     const [result] = await getPool().query<ResultSetHeader>(
       `INSERT INTO accounts (name, bank, kind, annual_rate, credit_limit, opening_balance, balance_as_of,
-         due_date, minimum_payment, total_payment, due_cutoff, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         due_date, minimum_payment, total_payment, due_cutoff, allows_directed_payments, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [data.name, data.bank, data.kind, data.annual_rate, data.credit_limit, data.opening_balance, data.balance_as_of,
-       data.due_date, data.minimum_payment, data.total_payment, data.due_cutoff, data.notes]
+       data.due_date, data.minimum_payment, data.total_payment, data.due_cutoff, data.allows_directed_payments ? 1 : 0, data.notes]
     );
     return (await this.findById(result.insertId)) as IAccount;
   }
@@ -144,9 +148,9 @@ export class Account {
     const [result] = await getPool().query<ResultSetHeader>(
       `UPDATE accounts SET name = ?, bank = ?, kind = ?, annual_rate = ?, credit_limit = ?,
          opening_balance = ?, balance_as_of = ?, due_date = ?, minimum_payment = ?, total_payment = ?, due_cutoff = ?,
-         notes = ? WHERE id = ?`,
+         allows_directed_payments = ?, notes = ? WHERE id = ?`,
       [data.name, data.bank, data.kind, data.annual_rate, data.credit_limit, data.opening_balance, data.balance_as_of,
-       data.due_date, data.minimum_payment, data.total_payment, data.due_cutoff, data.notes, id]
+       data.due_date, data.minimum_payment, data.total_payment, data.due_cutoff, data.allows_directed_payments ? 1 : 0, data.notes, id]
     );
     return result.affectedRows ? this.findById(id) : undefined;
   }
