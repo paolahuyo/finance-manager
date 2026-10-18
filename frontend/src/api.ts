@@ -42,6 +42,9 @@ export const api = {
   createRecurring: async (payload: { type: 'income' | 'expense'; description: string; amount: number; category_id: number | null; day_of_month: number }): Promise<void> => {
     await http.post('/recurring', payload);
   },
+  updateRecurring: async (id: number, payload: { type: 'income' | 'expense'; description: string; amount: number; category_id: number | null; day_of_month: number }): Promise<void> => {
+    await http.put(`/recurring/${id}`, payload);
+  },
   deleteRecurring: async (id: number): Promise<void> => {
     await http.delete(`/recurring/${id}`);
   },
