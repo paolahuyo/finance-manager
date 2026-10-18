@@ -173,7 +173,14 @@ function parse(pages: StatementPages): ParsedStatement {
     items,
     skipped_installments: skipped,
     warnings,
-    account_hint: { credit_limit: creditLimit, balance, annual_rate: annualRate },
+    account_hint: {
+      credit_limit: creditLimit,
+      balance,
+      annual_rate: annualRate,
+      due_date: [...dateCounts.keys()].filter(d => periodEnd !== null && d > periodEnd).sort().pop() ?? null,
+      minimum_payment: interest === null ? null : round2(capitalPaid + interest),
+      total_payment: balance
+    },
     installments
   };
 }

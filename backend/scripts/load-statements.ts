@@ -73,7 +73,9 @@ const json = (method: string, body: unknown): RequestInit => ({
         }
         await call(`/accounts/${account.id}`, json('PUT', {
           name: cardName, bank: parsed.bank, kind: 'credit_card',
-          annual_rate: hint.annual_rate, credit_limit: hint.credit_limit, opening_balance: opening, notes: null
+          annual_rate: hint.annual_rate, credit_limit: hint.credit_limit, opening_balance: opening, notes: null,
+          balance_as_of: parsed.period_end, due_date: hint.due_date ?? null, minimum_payment: hint.minimum_payment ?? null,
+          total_payment: hint.total_payment ?? null, due_cutoff: parsed.period_end
         }));
         console.log(`  tarjeta creada (id ${account.id}) | cupo ${fmt(hint.credit_limit ?? 0)} | tasa ${hint.annual_rate ?? '?'}% | saldo inicial ${fmt(opening)}`);
       } else if (isNew) {

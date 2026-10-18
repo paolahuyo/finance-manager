@@ -143,3 +143,14 @@ export interface AccountDetail {
   directed_payments: { total: number; linked: number; items: Transaction[] };
   movements: Transaction[];
 }
+
+export interface UpcomingPayment {
+  id: number;
+  name: string;
+  bank: string | null;
+  due_date: string;
+  minimum_payment: number | null;
+  total_payment: number | null;
+  due_cutoff: string | null;
+  paid_since_cutoff: number;
+}

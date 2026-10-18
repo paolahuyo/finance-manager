@@ -152,6 +152,10 @@ function parse(pages: StatementPages): ParsedStatement {
   }
 
   const text = flat.join('\n');
+  const dueLineIndex = flat.findIndex(l => /Fecha límite de pago/i.test(l));
+  const dueMatch = dueLineIndex >= 0 ? flat[dueLineIndex + 1]?.match(/(\d{2}) ([A-ZÁÉ]{3,4}) (\d{4})/) : null;
+  const dueDate = dueMatch ? iso(Number(dueMatch[3]), monthOf(dueMatch[2]) ?? 1, Number(dueMatch[1])) : null;
+  const minimum = text.match(/PAGO MÍNIMO\s+\$([\d.]+,\d{2})/i);
   const cap = text.match(/Tu cupo definido\s+\$([\d.]+,\d{2})/i);
   const debt = text.match(/DEUDA TOTAL HASTA EL[^$\n]*\$([\d.]+,\d{2})/i);
   return {
@@ -165,7 +169,10 @@ function parse(pages: StatementPages): ParsedStatement {
       credit_limit: cap ? toNumber(cap[1]) : null,
       balance: debt ? toNumber(debt[1]) : null,
       // Nu prints the monthly rate (M.V.); convert it to effective annual.
-      annual_rate: monthlyRate === null ? null : round2((Math.pow(1 + monthlyRate / 100, 12) - 1) * 100)
+      annual_rate: monthlyRate === null ? null : round2((Math.pow(1 + monthlyRate / 100, 12) - 1) * 100),
+      due_date: dueDate,
+      minimum_payment: minimum ? toNumber(minimum[1]) : null,
+      total_payment: debt ? toNumber(debt[1]) : null
     }
   };
 }

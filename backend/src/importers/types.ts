@@ -34,6 +34,10 @@ export interface AccountHint {
   balance: number | null;
   /** Effective annual rate, in %. */
   annual_rate: number | null;
+  /** Next payment printed on the statement. */
+  due_date?: string | null;
+  minimum_payment?: number | null;
+  total_payment?: number | null;
 }
 
 export interface ParsedStatement {

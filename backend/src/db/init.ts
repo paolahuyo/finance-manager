@@ -54,6 +54,10 @@ export async function initDb(): Promise<void> {
         credit_limit DECIMAL(15, 2) NULL,
         opening_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
         balance_as_of DATE NULL,
+        due_date DATE NULL,
+        minimum_payment DECIMAL(15, 2) NULL,
+        total_payment DECIMAL(15, 2) NULL,
+        due_cutoff DATE NULL,
         notes VARCHAR(255) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -75,6 +79,21 @@ export async function initDb(): Promise<void> {
     );
     if (asOfCols.length === 0) {
       await connection.query('ALTER TABLE accounts ADD COLUMN balance_as_of DATE NULL AFTER opening_balance');
+    }
+
+    // Next payment of each card, as printed on its latest statement.
+    for (const [column, definition] of [
+      ['due_date', 'DATE NULL'],
+      ['minimum_payment', 'DECIMAL(15, 2) NULL'],
+      ['total_payment', 'DECIMAL(15, 2) NULL'],
+      ['due_cutoff', 'DATE NULL']
+    ]) {
+      const [cols] = await connection.query<RowDataPacket[]>(
+        `SELECT 1 FROM information_schema.columns
+         WHERE table_schema = DATABASE() AND table_name = 'accounts' AND column_name = ?`,
+        [column]
+      );
+      if (cols.length === 0) await connection.query(`ALTER TABLE accounts ADD COLUMN ${column} ${definition}`);
     }
 
     // amount_cop is the source of truth for every total. For foreign-currency

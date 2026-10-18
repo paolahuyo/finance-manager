@@ -16,6 +16,10 @@ const optionalText = z.preprocess(
   z.string().trim().max(255).nullable().optional()
 );
 
+// Optional fields: absent (undefined) keeps the stored value on update; '' or null clears it.
+const optionalDate = z.preprocess(v => (v === '' ? null : v), z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional());
+const optionalAmount = z.preprocess(v => (v === '' ? null : v), z.coerce.number().min(0).nullable().optional());
+
 const accountSchema = z.object({
   name: z.string().trim().min(1, 'Required').max(100),
   bank: optionalText,
@@ -23,11 +27,15 @@ const accountSchema = z.object({
   annual_rate: optionalNumber,
   credit_limit: optionalNumber,
   opening_balance: z.coerce.number().min(0).default(0),
-  balance_as_of: z.preprocess(v => (v === '' || v === undefined ? null : v), z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable()),
+  balance_as_of: optionalDate,
+  due_date: optionalDate,
+  minimum_payment: optionalAmount,
+  total_payment: optionalAmount,
+  due_cutoff: optionalDate,
   notes: optionalText
 });
 
-function parseBody(req: Request, res: Response): AccountInput | null {
+function parseBody(req: Request, res: Response, current?: AccountInput): AccountInput | null {
   const parsed = accountSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -44,7 +52,11 @@ function parseBody(req: Request, res: Response): AccountInput | null {
     annual_rate: d.annual_rate,
     credit_limit: d.credit_limit,
     opening_balance: d.opening_balance,
-    balance_as_of: d.balance_as_of,
+    balance_as_of: d.balance_as_of === undefined ? current?.balance_as_of ?? null : d.balance_as_of,
+    due_date: d.due_date === undefined ? current?.due_date ?? null : d.due_date,
+    minimum_payment: d.minimum_payment === undefined ? current?.minimum_payment ?? null : d.minimum_payment,
+    total_payment: d.total_payment === undefined ? current?.total_payment ?? null : d.total_payment,
+    due_cutoff: d.due_cutoff === undefined ? current?.due_cutoff ?? null : d.due_cutoff,
     notes: d.notes ?? null
   };
 }
@@ -60,6 +72,14 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return;
     }
     res.json(await Account.findAllWithStats(month));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/upcoming', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await Account.upcomingPayments());
   } catch (error) {
     next(error);
   }
@@ -118,7 +138,12 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
       res.status(400).json({ error: 'Invalid id' });
       return;
     }
-    const data = parseBody(req, res);
+    const current = await Account.findById(id);
+    if (!current) {
+      res.status(404).json({ error: 'Account not found' });
+      return;
+    }
+    const data = parseBody(req, res, current);
     if (!data) return;
     const updated = await Account.update(id, data);
     if (!updated) {

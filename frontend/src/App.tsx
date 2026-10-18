@@ -4,6 +4,7 @@ import type { Account, AccountPayload, Category, MonthSummary, Transaction, Tran
 import { currentMonth } from './utils/format';
 import Header from './components/Header';
 import MonthNavigator from './components/MonthNavigator';
+import UpcomingPayments from './components/UpcomingPayments';
 import AccountsPage from './pages/AccountsPage';
 import AccountDetailPage from './pages/AccountDetailPage';
 import ImportPage from './pages/ImportPage';
@@ -144,6 +145,7 @@ function App(): JSX.Element {
           </div>
         )}
 
+        {(tab === 'summary' || (tab === 'accounts' && openAccountId === null)) && <UpcomingPayments refreshKey={accounts} />}
         {tab === 'summary' && <SummaryPage summary={summary} loading={loading} />}
         {tab === 'transactions' && (
           <TransactionsPage

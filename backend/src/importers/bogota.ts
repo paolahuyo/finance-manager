@@ -92,6 +92,7 @@ function parse(pages: StatementPages): ParsedStatement {
   const labelIndex = flat.findIndex(l => /Cupo total/i.test(l) && /Pago total/i.test(l));
   const limitMatch = labelIndex >= 0 ? flat[labelIndex + 1]?.match(/\$\s?([\d.]+)(?!,)/) : null;
   const totalDue = labelled('Pago total');
+  const payBy = text.match(/Paga antes de\s+(\d{2})\/([A-ZÁÉ]{3,4})\/(\d{4})/i);
 
   return {
     bank: 'Banco de Bogotá',
@@ -103,7 +104,10 @@ function parse(pages: StatementPages): ParsedStatement {
     account_hint: {
       credit_limit: limitMatch ? Number(limitMatch[1].replace(/\./g, '')) : null,
       balance: totalDue,
-      annual_rate: rate
+      annual_rate: rate,
+      due_date: payBy ? iso(Number(payBy[3]), monthOf(payBy[2].toUpperCase()) ?? 1, Number(payBy[1])) : null,
+      minimum_payment: labelled('Pago mínimo'),
+      total_payment: totalDue
     }
   };
 }
