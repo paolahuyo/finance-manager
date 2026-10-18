@@ -2,6 +2,7 @@ import express, { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { Account, AccountInput } from '../models/Account';
 import { Installment } from '../models/Installment';
+import { Loan } from '../models/Loan';
 import { Transaction } from '../models/Transaction';
 import { currentMonth, isValidMonth } from '../utils/month';
 
@@ -108,7 +109,11 @@ router.get('/:id/detail', async (req: Request, res: Response, next: NextFunction
       res.status(404).json({ error: 'Account not found' });
       return;
     }
-    const [installments, movements] = await Promise.all([Installment.latest(id), Transaction.findByAccount(id)]);
+    const [installments, movements, loanSchedule] = await Promise.all([
+      Installment.latest(id),
+      Transaction.findByAccount(id),
+      Loan.schedule(id)
+    ]);
     const directed = movements.filter(m => m.type === 'payment' && /^PAGO COMPRA ESPEC/i.test(m.description));
     res.json({
       account,
@@ -118,7 +123,8 @@ router.get('/:id/detail', async (req: Request, res: Response, next: NextFunction
         linked: directed.filter(d => d.linked_purchase).length,
         items: directed
       },
-      movements
+      movements,
+      loan_schedule: loanSchedule
     });
   } catch (error) {
     next(error);

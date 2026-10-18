@@ -142,6 +142,7 @@ export interface AccountDetail {
   installments: { cutoff: string; rows: InstallmentRow[] } | null;
   directed_payments: { total: number; linked: number; items: Transaction[] };
   movements: Transaction[];
+  loan_schedule: LoanScheduleRow[];
 }
 
 export interface UpcomingPayment {
@@ -160,4 +161,24 @@ export interface CardInstallments {
   account_name: string;
   cutoff: string;
   rows: InstallmentRow[];
+}
+
+export interface RecurringItem {
+  id: number;
+  type: 'income' | 'expense';
+  description: string;
+  amount_cop: number;
+  category_id: number | null;
+  category_name: string | null;
+  day_of_month: number;
+}
+
+export interface LoanScheduleRow {
+  n: number;
+  due_date: string;
+  balance_after: number;
+  capital: number;
+  interest: number;
+  insurance: number;
+  payment: number;
 }

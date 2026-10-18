@@ -3,6 +3,7 @@ import { api } from '../api';
 import type { CardInstallments, InstallmentRow } from '../types';
 import { formatCOP, formatLongDay } from '../utils/format';
 import { monthlyInterest } from '../utils/interest';
+import ExtraPaymentPlanner from './ExtraPaymentPlanner';
 
 interface InterestBreakdownProps {
   refreshKey?: unknown;
@@ -44,6 +45,8 @@ export default function InterestBreakdown({ refreshKey, onOpen }: InterestBreakd
           Según el último extracto cargado de cada tarjeta. Cada compra conserva la tasa que tenía cuando la hiciste.
         </p>
       </div>
+
+      <ExtraPaymentPlanner cards={cards} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 bg-gray-50 border-b">
         <button

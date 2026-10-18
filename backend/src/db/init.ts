@@ -151,6 +151,38 @@ export async function initDb(): Promise<void> {
       );
     }
 
+    // Fixed monthly items (salary, rent...): turned into real movements once their day arrives.
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS recurring_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        type ENUM('income', 'expense') NOT NULL,
+        description VARCHAR(255) NOT NULL,
+        amount_cop DECIMAL(15, 2) NOT NULL,
+        category_id INT NULL,
+        day_of_month TINYINT NOT NULL,
+        active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_recurring_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+      )
+    `);
+
+    // Payment plan of a loan (payroll loans): each installment is applied on its date.
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS loan_schedule (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        account_id INT NOT NULL,
+        n INT NOT NULL,
+        due_date DATE NOT NULL,
+        balance_after DECIMAL(15, 2) NOT NULL,
+        capital DECIMAL(15, 2) NOT NULL,
+        interest DECIMAL(15, 2) NOT NULL,
+        insurance DECIMAL(15, 2) NOT NULL,
+        payment DECIMAL(15, 2) NOT NULL,
+        UNIQUE KEY uniq_loan_n (account_id, n),
+        CONSTRAINT fk_loan_account FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+      )
+    `);
+
     // Installment table of each statement ("photo" at the cut-off), used to link payments to purchases.
     await connection.query(`
       CREATE TABLE IF NOT EXISTS statement_installments (

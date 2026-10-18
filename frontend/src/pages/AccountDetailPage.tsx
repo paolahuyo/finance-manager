@@ -54,7 +54,10 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
   if (error) return <div className="space-y-4">{back}<div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div></div>;
   if (!detail) return <div className="space-y-4">{back}<p className="text-gray-500">Cargando…</p></div>;
 
-  const { account, installments, directed_payments: directed, movements } = detail;
+  const { account, installments, directed_payments: directed, movements, loan_schedule: plan } = detail;
+  const today = new Date().toISOString().slice(0, 10);
+  const paidRows = plan.filter(r => r.due_date <= today);
+  const nextRows = plan.filter(r => r.due_date > today);
   const all = installments?.rows ?? [];
   const pending = all.filter(r => r.balance_after > 0);
   const withInterest = pending.filter(r => r.rate > 0);
@@ -97,6 +100,49 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
         <SummaryCard title="Intereses del mes" value={formatCOP(account.month_interest)} icon="🏦" color="red" />
         <SummaryCard title="Manejo, seguros y comisiones del mes" value={formatCOP(account.month_fees)} icon="🧾" color="red" />
       </div>
+
+      {plan.length > 0 && (
+        <section className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-6 border-b">
+            <h3 className="text-lg font-bold">Plan de pagos del préstamo</h3>
+            <p className="text-sm text-gray-600">
+              Cuota {paidRows.length} de {plan.length} descontada · próxima: {nextRows[0] ? `${formatLongDay(nextRows[0].due_date)} (${formatCOP(nextRows[0].payment)})` : '—'} ·
+              última cuota: {formatLongDay(plan[plan.length - 1].due_date)}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 bg-gray-50 border-b text-sm">
+            <div><p className="text-gray-600">Intereses ya pagados</p><p className="text-xl font-bold text-red-700">{formatCOP(paidRows.reduce((t, r) => t + r.interest, 0))}</p></div>
+            <div><p className="text-gray-600">Intereses que faltan</p><p className="text-xl font-bold text-red-700">{formatCOP(nextRows.reduce((t, r) => t + r.interest, 0))}</p></div>
+            <div><p className="text-gray-600">Seguros que faltan</p><p className="text-xl font-bold text-red-700">{formatCOP(nextRows.reduce((t, r) => t + r.insurance, 0))}</p></div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className={th}>Cuota</th><th className={th}>Fecha</th>
+                  <th className={`${th} text-right`}>Cuota total</th><th className={`${th} text-right`}>Capital</th>
+                  <th className={`${th} text-right`}>Intereses</th><th className={`${th} text-right`}>Seguro</th>
+                  <th className={`${th} text-right`}>Saldo después</th>
+                </tr>
+              </thead>
+              <tbody>
+                {plan.slice(Math.max(paidRows.length - 1, 0), paidRows.length + 6).map(r => (
+                  <tr key={r.n} className={`border-b ${r.due_date <= today ? 'text-gray-400' : ''}`}>
+                    <td className={td}>{r.n}{r.due_date <= today ? ' ✓' : ''}</td>
+                    <td className={td}>{formatLongDay(r.due_date)}</td>
+                    <td className={`${td} text-right`}>{formatCOP(r.payment)}</td>
+                    <td className={`${td} text-right`}>{formatCOP(r.capital)}</td>
+                    <td className={`${td} text-right text-red-700`}>{formatCOP(r.interest)}</td>
+                    <td className={`${td} text-right`}>{formatCOP(r.insurance)}</td>
+                    <td className={`${td} text-right font-medium`}>{formatCOP(r.balance_after)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="px-6 py-3 text-xs text-gray-500">Se descuenta de nómina: en la app solo se registra el capital como abono, porque el sueldo ya llega neto.</p>
+          </div>
+        </section>
+      )}
 
       <section className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-6 border-b flex flex-wrap items-center justify-between gap-3">

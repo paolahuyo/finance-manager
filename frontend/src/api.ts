@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { CardInstallments, UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
+import type { RecurringItem, CardInstallments, UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
 
 const http = axios.create({ baseURL: '/api' });
 
@@ -38,6 +38,17 @@ export const api = {
 
   accounts: async (month: string): Promise<Account[]> =>
     (await http.get<Account[]>('/accounts', { params: { month } })).data,
+  recurring: async (): Promise<RecurringItem[]> => (await http.get<RecurringItem[]>('/recurring')).data,
+  createRecurring: async (payload: { type: 'income' | 'expense'; description: string; amount: number; category_id: number | null; day_of_month: number }): Promise<void> => {
+    await http.post('/recurring', payload);
+  },
+  deleteRecurring: async (id: number): Promise<void> => {
+    await http.delete(`/recurring/${id}`);
+  },
+  /** Creates this month's fixed items and payroll loan installments whose day has arrived. */
+  applyRecurring: async (month: string, today: string): Promise<void> => {
+    await http.post('/recurring/apply', null, { params: { month, today } });
+  },
   installmentsByCard: async (): Promise<CardInstallments[]> =>
     (await http.get<CardInstallments[]>('/accounts/installments')).data,
   upcomingPayments: async (): Promise<UpcomingPayment[]> =>

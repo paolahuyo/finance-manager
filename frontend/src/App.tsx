@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, errorMessage } from './api';
 import type { Account, AccountPayload, Category, MonthSummary, Transaction, TransactionPayload } from './types';
-import { currentMonth } from './utils/format';
+import { currentMonth, todayISO } from './utils/format';
 import Header from './components/Header';
 import MonthNavigator from './components/MonthNavigator';
 import UpcomingPayments from './components/UpcomingPayments';
 import InterestBreakdown from './components/InterestBreakdown';
+import MonthPlan from './components/MonthPlan';
 import AccountsPage from './pages/AccountsPage';
 import AccountDetailPage from './pages/AccountDetailPage';
 import ImportPage from './pages/ImportPage';
@@ -37,6 +38,8 @@ function App(): JSX.Element {
   }, []);
 
   const loadMonth = useCallback(async (target: string): Promise<{ txs: Transaction[]; sum: MonthSummary; accs: Account[] }> => {
+    // Fixed monthly items and payroll loan installments become movements once their day arrives.
+    await api.applyRecurring(target, todayISO()).catch(() => undefined);
     const [txs, sum, accs] = await Promise.all([
       api.transactions(target),
       api.summary(target),
@@ -147,6 +150,7 @@ function App(): JSX.Element {
         )}
 
         {(tab === 'summary' || (tab === 'accounts' && openAccountId === null)) && <UpcomingPayments refreshKey={accounts} />}
+        {tab === 'summary' && <MonthPlan categories={categories} refreshKey={accounts} onChanged={() => void refresh()} />}
         {tab === 'summary' && <SummaryPage summary={summary} loading={loading} />}
         {tab === 'transactions' && (
           <TransactionsPage
