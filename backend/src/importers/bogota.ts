@@ -27,6 +27,7 @@ function parse(pages: StatementPages): ParsedStatement {
   const items: DraftItem[] = [];
   let skipped = 0;
   let feeLinesTotal = 0;
+  let rate: number | null = null;
 
   const periodMatch = text.match(PERIOD_RE);
   const periodStart = periodMatch ? iso(Number(periodMatch[3]), monthOf(periodMatch[2]) ?? 1, Number(periodMatch[1])) : null;
@@ -44,6 +45,8 @@ function parse(pages: StatementPages): ParsedStatement {
     const date = iso(2000 + Number(m[1]), Number(m[2]), Number(m[3]));
     const description = cleanDescription(m[5]);
     const amount = toNumber(m[6].trim().split(/\s+/)[0]);
+    const lineRate = toNumber(m[8]);
+    if (lineRate > 0) rate = lineRate;
     const inPeriod = !!periodStart && !!periodEnd && date >= periodStart && date <= periodEnd;
     if (!inPeriod) {
       skipped++;
@@ -85,7 +88,24 @@ function parse(pages: StatementPages): ParsedStatement {
     warnings.push(`El resumen indica pagos y créditos por ${payments}, pero no se encontró la línea del pago. Regístralo a mano.`);
   }
 
-  return { bank: 'Banco de Bogotá', period_start: periodStart, period_end: periodEnd, items, skipped_installments: skipped, warnings };
+  // The values line under "Cupo total   Cupo disponible ...   Pago total" holds: limit, available, total due.
+  const labelIndex = flat.findIndex(l => /Cupo total/i.test(l) && /Pago total/i.test(l));
+  const limitMatch = labelIndex >= 0 ? flat[labelIndex + 1]?.match(/\$\s?([\d.]+)(?!,)/) : null;
+  const totalDue = labelled('Pago total');
+
+  return {
+    bank: 'Banco de Bogotá',
+    period_start: periodStart,
+    period_end: periodEnd,
+    items,
+    skipped_installments: skipped,
+    warnings,
+    account_hint: {
+      credit_limit: limitMatch ? Number(limitMatch[1].replace(/\./g, '')) : null,
+      balance: totalDue,
+      annual_rate: rate
+    }
+  };
 }
 
 export const bogotaReader: StatementReader = {

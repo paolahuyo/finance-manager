@@ -28,6 +28,8 @@ import { extractPages } from '../src/importers/pdfText';
       console.log(`  banco: ${parsed.bank} | periodo: ${parsed.period_start ?? '?'} → ${parsed.period_end ?? '?'}`);
       for (const [kind, { n, total }] of byKind) console.log(`  ${kind.padEnd(9)} ${String(n).padStart(3)} líneas | total ${total.toLocaleString('es-CO', { maximumFractionDigits: 2 })}`);
       const usd = parsed.items.filter(i => i.original_currency === 'USD').length;
+      const h = parsed.account_hint;
+      console.log(`  tarjeta → cupo: ${h.credit_limit ?? '?'} | deuda al corte: ${h.balance ?? '?'} | tasa E.A.: ${h.annual_rate ?? '?'}%`);
       console.log(`  en USD: ${usd} | cuotas antiguas omitidas: ${parsed.skipped_installments}`);
       for (const w of parsed.warnings) console.log(`  ⚠ ${w}`);
     } catch (error) {

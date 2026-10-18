@@ -50,6 +50,9 @@ function parse(pages: StatementPages): ParsedStatement {
   let section: 'previous' | 'current' = 'previous';
   let sawCurrentSection = false;
   let installmentRows = 0;
+  let balanceAfter = 0;
+  const currentRates: number[] = [];
+  const allRates: number[] = [];
 
   const flat = pages.flat();
   const periodEndMatch = (pages[0] ?? []).join('\n').match(DATE_DASH_RE);
@@ -67,6 +70,11 @@ function parse(pages: StatementPages): ParsedStatement {
     if (purchase) {
       installmentRows++;
       capitalPaid += toNumber(purchase[9]);
+      balanceAfter += toNumber(purchase[10]);
+      if (Number(purchase[4]) > 0) {
+        allRates.push(Number(purchase[4]));
+        if (section === 'current') currentRates.push(Number(purchase[4]));
+      }
       if (section !== 'current') {
         skipped++;
         continue;
@@ -124,7 +132,31 @@ function parse(pages: StatementPages): ParsedStatement {
     });
   }
 
-  return { bank: 'BBVA', period_start: null, period_end: periodEnd, items, skipped_installments: skipped, warnings };
+  // Debt at cut-off = remaining capital of every purchase + what is due this cycle (capital + interest).
+  const balance = interest === null ? null : round2(balanceAfter + capitalPaid + interest);
+  let creditLimit: number | null = null;
+  if (balance !== null) {
+    const figures = new Set<number>();
+    for (const line of pages[0] ?? []) {
+      if (PURCHASE_RE.test(line) || CURRENCY_RE.test(line) || CREDIT_RE.test(line)) continue;
+      for (const m of line.match(MONEY_RE) ?? []) figures.add(toNumber(m));
+    }
+    const list = [...figures];
+    const match = list.find(c => list.some(d => Math.abs(c - d - balance) < 0.02));
+    creditLimit = match ?? null;
+  }
+  const rates = currentRates.length ? currentRates : allRates;
+  const annualRate = rates.length ? rates[rates.length - 1] : null;
+
+  return {
+    bank: 'BBVA',
+    period_start: null,
+    period_end: periodEnd,
+    items,
+    skipped_installments: skipped,
+    warnings,
+    account_hint: { credit_limit: creditLimit, balance, annual_rate: annualRate }
+  };
 }
 
 export const bbvaReader: StatementReader = {

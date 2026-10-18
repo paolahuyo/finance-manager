@@ -14,6 +14,15 @@ export interface DraftItem {
   selected: boolean;
 }
 
+/** What the statement says about the card itself; used to create the account without typing it. */
+export interface AccountHint {
+  credit_limit: number | null;
+  /** Debt at the statement cut-off date. */
+  balance: number | null;
+  /** Effective annual rate, in %. */
+  annual_rate: number | null;
+}
+
 export interface ParsedStatement {
   bank: 'BBVA' | 'Nu' | 'Banco de Bogotá';
   period_start: string | null;
@@ -22,6 +31,7 @@ export interface ParsedStatement {
   /** Installment lines of purchases made in earlier periods (already counted when they happened). */
   skipped_installments: number;
   warnings: string[];
+  account_hint: AccountHint;
 }
 
 /** Lines of text per page, as rebuilt from the PDF (columns separated by 3+ spaces). */

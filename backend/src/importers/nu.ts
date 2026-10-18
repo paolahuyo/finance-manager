@@ -6,7 +6,7 @@ const MONTHS: Record<string, number> = {
 
 // DD MON [YYYY]  description  $total  N de M  $installment  rate%  $interest  $due  $remaining
 const PURCHASE_RE =
-  /^(\d{2}) ([A-ZÁÉ]{3,4})(?: (\d{4}))?\s+(.+?)\s+\$([\d.]+,\d{2})\s+(\d+) de (\d+)\s+\$[\d.]+,\d{2}\s+\d+(?:\.\d+)?%\s+\$[\d.]+,\d{2}\s+\$[\d.]+,\d{2}\s+\$[\d.]+,\d{2}\s*$/;
+  /^(\d{2}) ([A-ZÁÉ]{3,4})(?: (\d{4}))?\s+(.+?)\s+\$([\d.]+,\d{2})\s+(\d+) de (\d+)\s+\$[\d.]+,\d{2}\s+(\d+(?:\.\d+)?)%\s+\$[\d.]+,\d{2}\s+\$[\d.]+,\d{2}\s+\$[\d.]+,\d{2}\s*$/;
 const PAYMENT_RE = /^(\d{2}) ([A-ZÁÉ]{3,4})(?: (\d{4}))?\s+Pago\s+\$([\d.]+,\d{2})/;
 const FEE_RE = /↪\s*Comisión por cambio de moneda\s+\$([\d.]+,\d{2})/i;
 const PERIOD_RE = /(\d{2}) ([A-ZÁÉ]{3,4}) (\d{4}) - (\d{2}) ([A-ZÁÉ]{3,4}) (\d{4})/;
@@ -49,6 +49,7 @@ function parse(pages: StatementPages): ParsedStatement {
     !!periodStart && !!periodEnd && date >= periodStart && date <= periodEnd;
 
   let lastPurchaseIsNew = false;
+  let monthlyRate: number | null = null;
   let lastPurchaseDesc = '';
   let feesSum = 0;
 
@@ -59,6 +60,7 @@ function parse(pages: StatementPages): ParsedStatement {
     if (purchase) {
       const date = resolveDate(i, purchase[1], purchase[2], purchase[3]);
       lastPurchaseDesc = cleanDescription(purchase[4]);
+      if (monthlyRate === null && Number(purchase[8]) > 0) monthlyRate = Number(purchase[8]);
       lastPurchaseIsNew = !!date && inPeriod(date);
       if (!date || !lastPurchaseIsNew) {
         skipped++;
@@ -149,7 +151,23 @@ function parse(pages: StatementPages): ParsedStatement {
     );
   }
 
-  return { bank: 'Nu', period_start: periodStart, period_end: periodEnd, items, skipped_installments: skipped, warnings };
+  const text = flat.join('\n');
+  const cap = text.match(/Tu cupo definido\s+\$([\d.]+,\d{2})/i);
+  const debt = text.match(/DEUDA TOTAL HASTA EL[^$\n]*\$([\d.]+,\d{2})/i);
+  return {
+    bank: 'Nu',
+    period_start: periodStart,
+    period_end: periodEnd,
+    items,
+    skipped_installments: skipped,
+    warnings,
+    account_hint: {
+      credit_limit: cap ? toNumber(cap[1]) : null,
+      balance: debt ? toNumber(debt[1]) : null,
+      // Nu prints the monthly rate (M.V.); convert it to effective annual.
+      annual_rate: monthlyRate === null ? null : round2((Math.pow(1 + monthlyRate / 100, 12) - 1) * 100)
+    }
+  };
 }
 
 export const nuReader: StatementReader = {
