@@ -5,6 +5,7 @@ import { currentMonth } from './utils/format';
 import Header from './components/Header';
 import MonthNavigator from './components/MonthNavigator';
 import AccountsPage from './pages/AccountsPage';
+import AccountDetailPage from './pages/AccountDetailPage';
 import ImportPage from './pages/ImportPage';
 import SummaryPage from './pages/SummaryPage';
 import TransactionsPage from './pages/TransactionsPage';
@@ -25,6 +26,7 @@ function App(): JSX.Element {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<MonthSummary | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [openAccountId, setOpenAccountId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
@@ -120,7 +122,10 @@ function App(): JSX.Element {
             {TABS.map(({ id, label }) => (
               <button
                 key={id}
-                onClick={() => setTab(id)}
+                onClick={() => {
+                  setTab(id);
+                  setOpenAccountId(null);
+                }}
                 aria-current={tab === id ? 'page' : undefined}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium ${
                   tab === id ? 'bg-white shadow text-blue-700' : 'text-gray-600 hover:text-gray-900'
@@ -151,12 +156,16 @@ function App(): JSX.Element {
           />
         )}
         {tab === 'import' && <ImportPage accounts={accounts} categories={categories} onImported={refresh} />}
-        {tab === 'accounts' && (
+        {tab === 'accounts' && openAccountId !== null && (
+          <AccountDetailPage accountId={openAccountId} month={month} onBack={() => setOpenAccountId(null)} />
+        )}
+        {tab === 'accounts' && openAccountId === null && (
           <AccountsPage
             month={month}
             accounts={accounts}
             onCreate={handleCreateAccount}
             onDelete={handleDeleteAccount}
+            onOpen={setOpenAccountId}
           />
         )}
       </main>

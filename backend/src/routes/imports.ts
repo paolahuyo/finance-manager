@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { Account, INTEREST_CATEGORY } from '../models/Account';
+import { Account, INTEREST_CATEGORY, feeCategoryName } from '../models/Account';
 import { Category } from '../models/Category';
 import { Installment } from '../models/Installment';
 import { linkAccountPayments } from '../services/paymentLinker';
@@ -71,11 +71,13 @@ router.post(
         const occurrence = seen.get(base) ?? 0;
         seen.set(base, occurrence + 1);
         const categoryName =
-          item.kind === 'interest' || item.kind === 'fee'
+          item.kind === 'interest'
             ? INTEREST_CATEGORY
-            : item.kind === 'purchase'
-              ? suggestCategoryName(item.description)
-              : null;
+            : item.kind === 'fee'
+              ? feeCategoryName(item.description)
+              : item.kind === 'purchase'
+                ? suggestCategoryName(item.description)
+                : null;
         return {
           ...item,
           import_hash: hashItem(accountId, item, occurrence),

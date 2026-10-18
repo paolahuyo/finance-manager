@@ -3,7 +3,37 @@ import { getPool } from '../db/init';
 import type { InstallmentRow } from '../importers/types';
 import type { Snapshot } from '../services/linkPayments';
 
+export interface InstallmentDetail {
+  purchase_date: string;
+  description: string;
+  original_value: number;
+  installment_no: number;
+  installments_total: number;
+  balance_before: number;
+  capital_paid: number;
+  balance_after: number;
+  rate: number;
+}
+
 export class Installment {
+  /** Installment table of the most recent statement stored for this card. */
+  static async latest(accountId: number): Promise<{ cutoff: string; rows: InstallmentDetail[] } | null> {
+    const [cut] = await getPool().query<RowDataPacket[]>(
+      'SELECT MAX(cutoff) AS cutoff FROM statement_installments WHERE account_id = ?',
+      [accountId]
+    );
+    const cutoff = cut[0]?.cutoff as string | null;
+    if (!cutoff) return null;
+    const [rows] = await getPool().query<RowDataPacket[]>(
+      `SELECT purchase_date, description, original_value, installment_no, installments_total,
+              balance_before, capital_paid, balance_after, rate
+       FROM statement_installments WHERE account_id = ? AND cutoff = ?
+       ORDER BY balance_after DESC, purchase_date DESC`,
+      [accountId, cutoff]
+    );
+    return { cutoff, rows: rows as InstallmentDetail[] };
+  }
+
   /** Stores the installment table of one statement, replacing a previous upload of the same statement. */
   static async replaceSnapshot(accountId: number, cutoff: string, rows: InstallmentRow[]): Promise<void> {
     const connection = await getPool().getConnection();

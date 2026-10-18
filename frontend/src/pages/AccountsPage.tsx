@@ -8,13 +8,14 @@ interface AccountsPageProps {
   accounts: Account[];
   onCreate: (payload: AccountPayload) => Promise<void>;
   onDelete: (id: number) => void;
+  onOpen: (id: number) => void;
 }
 
 const KIND_LABEL = { credit_card: 'Tarjeta', loan: 'Préstamo', personal: 'Persona' } as const;
 const th = 'px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap';
 const td = 'px-4 py-3 text-sm text-gray-900 whitespace-nowrap';
 
-export default function AccountsPage({ month, accounts, onCreate, onDelete }: AccountsPageProps): JSX.Element {
+export default function AccountsPage({ month, accounts, onCreate, onDelete, onOpen }: AccountsPageProps): JSX.Element {
   const sum = (pick: (a: Account) => number): number => accounts.reduce((total, a) => total + pick(a), 0);
 
   return (
@@ -22,7 +23,7 @@ export default function AccountsPage({ month, accounts, onCreate, onDelete }: Ac
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <SummaryCard title="Deuda total" value={formatCOP(sum(a => a.balance))} icon="💳" color="red" />
         <SummaryCard title={`Intereses · ${monthLabel(month)}`} value={formatCOP(sum(a => a.month_interest))} icon="🏦" color="red" />
-        <SummaryCard title="Intereses del año" value={formatCOP(sum(a => a.year_interest))} icon="📅" color="red" />
+        <SummaryCard title={`Manejo, seguros y comisiones · ${monthLabel(month)}`} value={formatCOP(sum(a => a.month_fees))} icon="🧾" color="red" />
         <SummaryCard title={`Abonos · ${monthLabel(month)}`} value={formatCOP(sum(a => a.month_payments))} icon="✅" color="green" />
       </div>
 
@@ -37,7 +38,10 @@ export default function AccountsPage({ month, accounts, onCreate, onDelete }: Ac
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <h2 className="text-xl font-bold p-6 border-b">Tarjetas y deudas</h2>
+              <div className="p-6 border-b">
+                <h2 className="text-xl font-bold">Tarjetas y deudas</h2>
+                <p className="text-sm text-gray-600">Haz clic en una tarjeta para ver sus compras a cuotas, abonos y movimientos.</p>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
@@ -47,6 +51,7 @@ export default function AccountsPage({ month, accounts, onCreate, onDelete }: Ac
                       <th className={th}>Tasa E.A.</th>
                       <th className={th}>Interés mes</th>
                       <th className={th}>Interés año</th>
+                      <th className={th}>Cargos mes</th>
                       <th className={th}>Abonos mes</th>
                       <th className={th}></th>
                     </tr>
@@ -57,7 +62,9 @@ export default function AccountsPage({ month, accounts, onCreate, onDelete }: Ac
                       return (
                         <tr key={a.id} className="border-b hover:bg-gray-50">
                           <td className={td}>
-                            <p className="font-medium">{a.name}</p>
+                            <button onClick={() => onOpen(a.id)} className="font-medium text-blue-700 hover:underline text-left">
+                              {a.name} →
+                            </button>
                             <p className="text-xs text-gray-500">
                               {KIND_LABEL[a.kind]}{a.bank ? ` · ${a.bank}` : ''}
                               {used !== null && ` · cupo usado ${used}%`}
@@ -67,6 +74,7 @@ export default function AccountsPage({ month, accounts, onCreate, onDelete }: Ac
                           <td className={td}>{a.annual_rate !== null ? `${a.annual_rate}%` : '—'}</td>
                           <td className={`${td} text-red-600`}>{formatCOP(a.month_interest)}</td>
                           <td className={`${td} text-red-600`}>{formatCOP(a.year_interest)}</td>
+                          <td className={`${td} text-red-600`} title="Cuota de manejo, seguros y comisiones">{formatCOP(a.month_fees)}</td>
                           <td className={`${td} text-green-600`}>{formatCOP(a.month_payments)}</td>
                           <td className={td}>
                             <button onClick={() => onDelete(a.id)} className="text-gray-400 hover:text-red-600"

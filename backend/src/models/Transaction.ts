@@ -59,6 +59,14 @@ export class Transaction {
     return rows as ITransaction[];
   }
 
+  static async findByAccount(accountId: number, limit = 200): Promise<ITransaction[]> {
+    const [rows] = await getPool().query<RowDataPacket[]>(
+      `${SELECT_WITH_CATEGORY} WHERE t.account_id = ? ORDER BY t.date DESC, t.id DESC LIMIT ?`,
+      [accountId, limit]
+    );
+    return rows as ITransaction[];
+  }
+
   static async findById(id: number): Promise<ITransaction | undefined> {
     const [rows] = await getPool().query<RowDataPacket[]>(
       `${SELECT_WITH_CATEGORY} WHERE t.id = ?`,

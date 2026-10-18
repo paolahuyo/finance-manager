@@ -47,6 +47,7 @@ export interface MonthSummary {
   expense: number;
   payments: number;
   interest: number;
+  fees: number;
   balance: number;
   expenseByCategory: CategoryTotal[];
   incomeByCategory: CategoryTotal[];
@@ -68,6 +69,8 @@ export interface Account {
   month_interest: number;
   year_interest: number;
   month_payments: number;
+  month_fees: number;
+  year_fees: number;
 }
 
 export interface AccountPayload {
@@ -120,4 +123,23 @@ export interface ImportResult {
   inserted: number;
   skipped_duplicates: number;
   linked_payments?: number;
+}
+
+export interface InstallmentRow {
+  purchase_date: string;
+  description: string;
+  original_value: number;
+  installment_no: number;
+  installments_total: number;
+  balance_before: number;
+  capital_paid: number;
+  balance_after: number;
+  rate: number;
+}
+
+export interface AccountDetail {
+  account: Account;
+  installments: { cutoff: string; rows: InstallmentRow[] } | null;
+  directed_payments: { total: number; linked: number; items: Transaction[] };
+  movements: Transaction[];
 }

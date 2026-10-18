@@ -31,7 +31,10 @@ const DEFAULT_CATEGORIES: ReadonlyArray<readonly [string, 'income' | 'expense']>
   ['Educación', 'expense'],
   ['Entretenimiento', 'expense'],
   ['Ropa', 'expense'],
-  ['Intereses y comisiones', 'expense'],
+  ['Intereses', 'expense'],
+  ['Cuota de manejo', 'expense'],
+  ['Seguros', 'expense'],
+  ['Comisiones', 'expense'],
   ['Otros gastos', 'expense']
 ];
 
@@ -154,6 +157,14 @@ export async function initDb(): Promise<void> {
     );
     if (linkCols.length === 0) {
       await connection.query('ALTER TABLE transactions ADD COLUMN linked_purchase JSON NULL');
+    }
+
+    // "Intereses y comisiones" was split: keep its id (and its rows) as "Intereses".
+    const [legacy] = await connection.query<RowDataPacket[]>(
+      "SELECT (SELECT COUNT(*) FROM categories WHERE name = 'Intereses y comisiones') AS old_cat, (SELECT COUNT(*) FROM categories WHERE name = 'Intereses') AS new_cat"
+    );
+    if (Number(legacy[0].old_cat) > 0 && Number(legacy[0].new_cat) === 0) {
+      await connection.query("UPDATE categories SET name = 'Intereses' WHERE name = 'Intereses y comisiones'");
     }
 
     await connection.query(

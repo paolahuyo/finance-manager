@@ -4,7 +4,16 @@ import { monthRange } from '../utils/month';
 
 export type AccountKind = 'credit_card' | 'loan' | 'personal';
 
-export const INTEREST_CATEGORY = 'Intereses y comisiones';
+export const INTEREST_CATEGORY = 'Intereses';
+/** Fixed bank charges, reported apart from interest. */
+export const FEE_CATEGORIES = ['Cuota de manejo', 'Seguros', 'Comisiones'] as const;
+
+/** Category for a bank charge, from its description. */
+export function feeCategoryName(description: string): (typeof FEE_CATEGORIES)[number] {
+  if (/MANEJO/i.test(description)) return 'Cuota de manejo';
+  if (/SEGURO/i.test(description)) return 'Seguros';
+  return 'Comisiones';
+}
 
 export interface IAccount {
   id: number;
@@ -38,6 +47,9 @@ export interface IAccountStats extends IAccount {
   year_interest: number;
   /** Payments made in the selected month. */
   month_payments: number;
+  /** Handling fees, insurance and commissions charged in the selected month / year to date. */
+  month_fees: number;
+  year_fees: number;
 }
 
 const COLUMNS = 'id, name, bank, kind, annual_rate, credit_limit, opening_balance, balance_as_of, notes';
@@ -72,20 +84,27 @@ export class Account {
          COALESCE(SUM(CASE WHEN t.type = 'expense' AND c.name = ? AND t.date >= ? AND t.date < ?
                            THEN t.amount_cop END), 0) AS year_interest,
          COALESCE(SUM(CASE WHEN t.type = 'payment' AND t.date >= ? AND t.date < ?
-                           THEN t.amount_cop END), 0) AS month_payments
+                           THEN t.amount_cop END), 0) AS month_payments,
+         COALESCE(SUM(CASE WHEN t.type = 'expense' AND c.name IN (?) AND t.date >= ? AND t.date < ?
+                           THEN t.amount_cop END), 0) AS month_fees,
+         COALESCE(SUM(CASE WHEN t.type = 'expense' AND c.name IN (?) AND t.date >= ? AND t.date < ?
+                           THEN t.amount_cop END), 0) AS year_fees
        FROM accounts a
        LEFT JOIN transactions t ON t.account_id = a.id
        LEFT JOIN categories c ON c.id = t.category_id
        GROUP BY a.id
        ORDER BY a.kind, a.name`,
-      [INTEREST_CATEGORY, start, end, INTEREST_CATEGORY, yearStart, end, start, end]
+      [INTEREST_CATEGORY, start, end, INTEREST_CATEGORY, yearStart, end, start, end,
+       [...FEE_CATEGORIES], start, end, [...FEE_CATEGORIES], yearStart, end]
     );
     return rows.map(r => ({
       ...(r as IAccount),
       balance: Number(r.balance),
       month_interest: Number(r.month_interest),
       year_interest: Number(r.year_interest),
-      month_payments: Number(r.month_payments)
+      month_payments: Number(r.month_payments),
+      month_fees: Number(r.month_fees),
+      year_fees: Number(r.year_fees)
     }));
   }
 

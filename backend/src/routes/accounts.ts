@@ -1,6 +1,8 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { Account, AccountInput } from '../models/Account';
+import { Installment } from '../models/Installment';
+import { Transaction } from '../models/Transaction';
 import { currentMonth, isValidMonth } from '../utils/month';
 
 const router: Router = express.Router();
@@ -58,6 +60,38 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return;
     }
     res.json(await Account.findAllWithStats(month));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Everything about one card: stats, installment table of the latest statement, movements and
+// which purchase each directed payment ("PAGO COMPRA ESPECIF.") paid.
+router.get('/:id/detail', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = Number(req.params.id);
+    const month = req.query.month ?? currentMonth();
+    if (!Number.isInteger(id) || id <= 0 || !isValidMonth(month)) {
+      res.status(400).json({ error: 'Invalid id or month' });
+      return;
+    }
+    const account = (await Account.findAllWithStats(month)).find(a => a.id === id);
+    if (!account) {
+      res.status(404).json({ error: 'Account not found' });
+      return;
+    }
+    const [installments, movements] = await Promise.all([Installment.latest(id), Transaction.findByAccount(id)]);
+    const directed = movements.filter(m => m.type === 'payment' && /^PAGO COMPRA ESPEC/i.test(m.description));
+    res.json({
+      account,
+      installments,
+      directed_payments: {
+        total: directed.length,
+        linked: directed.filter(d => d.linked_purchase).length,
+        items: directed
+      },
+      movements
+    });
   } catch (error) {
     next(error);
   }

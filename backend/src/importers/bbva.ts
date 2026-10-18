@@ -138,7 +138,7 @@ function parse(pages: StatementPages): ParsedStatement {
 
   const interest = deriveInterest(pages[0] ?? [], round2(capitalPaid));
   if (interest === null) {
-    warnings.push('No se pudo determinar el interés de este extracto. Regístralo a mano como "Intereses y comisiones".');
+    warnings.push('No se pudo determinar el interés de este extracto. Regístralo a mano con la categoría "Intereses".');
   } else if (interest > 0) {
     items.push({
       date: periodEnd ?? items[0]?.date ?? new Date().toISOString().slice(0, 10),
