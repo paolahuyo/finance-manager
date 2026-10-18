@@ -61,7 +61,8 @@ export default function ImportPage({ accounts, categories, onImported }: ImportP
       setResult(
         `Se importaron ${res.inserted} movimientos` +
           (res.skipped_duplicates ? ` (${res.skipped_duplicates} ya existían y se omitieron)` : '') +
-          '.'
+          '.' +
+          (res.linked_payments ? ` Se cruzaron ${res.linked_payments} abonos con la compra que pagaron.` : '')
       );
       setPreview(null);
       setItems([]);
@@ -127,6 +128,11 @@ export default function ImportPage({ accounts, categories, onImported }: ImportP
               <p className="text-sm text-gray-600">
                 Se omitieron {preview.skipped_installments} cuotas de compras de meses anteriores: ya fueron un gasto
                 cuando ocurrieron.
+              </p>
+            )}
+            {!!preview.linked_payments && (
+              <p className="text-sm text-blue-700">
+                Con este extracto se cruzaron {preview.linked_payments} abonos con la compra que pagaron.
               </p>
             )}
             {preview.warnings.map(w => (

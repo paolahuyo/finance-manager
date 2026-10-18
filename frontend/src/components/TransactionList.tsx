@@ -1,5 +1,5 @@
 import type { Transaction } from '../types';
-import { formatCOP, formatDay, formatUSD } from '../utils/format';
+import { formatCOP, formatDay, formatLongDay, formatUSD } from '../utils/format';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -38,6 +38,12 @@ export default function TransactionList({ transactions, onDelete }: TransactionL
                   {tx.original_currency === 'USD' &&
                     ` · ${formatUSD(tx.original_amount)} a ${formatCOP(tx.exchange_rate)}`}
                 </p>
+                {tx.linked_purchase && (
+                  <p className="text-xs text-blue-700">
+                    Pagó la compra {tx.linked_purchase.description} del {formatLongDay(tx.linked_purchase.purchase_date)}
+                    {' '}(valor {formatCOP(tx.linked_purchase.original_value)})
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-4 shrink-0">
                 <span className={`font-semibold ${style.color}`}>

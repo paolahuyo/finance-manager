@@ -20,6 +20,7 @@ export interface Transaction {
   category_name: string | null;
   account_id: number | null;
   account_name: string | null;
+  linked_purchase: { description: string; purchase_date: string; original_value: number; balance: number } | null;
   date: string;
 }
 
@@ -111,10 +112,12 @@ export interface ImportPreview {
   period_end: string | null;
   skipped_installments: number;
   warnings: string[];
+  linked_payments?: number;
   items: ImportItem[];
 }
 
 export interface ImportResult {
   inserted: number;
   skipped_duplicates: number;
+  linked_payments?: number;
 }

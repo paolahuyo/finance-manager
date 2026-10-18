@@ -1,4 +1,4 @@
-import type { DraftItem, ParsedStatement, StatementPages, StatementReader } from './types';
+import type { DraftItem, InstallmentRow, ParsedStatement, StatementPages, StatementReader } from './types';
 
 // Purchase / installment line:
 // DDMMYYYY  ref  DESCRIPTION  rate  CC DE TT  original  balance-before  capital-paid  balance-after
@@ -51,6 +51,7 @@ function parse(pages: StatementPages): ParsedStatement {
   let sawCurrentSection = false;
   let installmentRows = 0;
   let balanceAfter = 0;
+  const installments: InstallmentRow[] = [];
   const currentRates: number[] = [];
   const allRates: number[] = [];
 
@@ -77,6 +78,17 @@ function parse(pages: StatementPages): ParsedStatement {
       installmentRows++;
       capitalPaid += toNumber(purchase[9]);
       balanceAfter += toNumber(purchase[10]);
+      installments.push({
+        purchase_date: isoFromCompact(purchase[1]),
+        description: cleanDescription(purchase[3]),
+        original_value: toNumber(purchase[7]),
+        installment_no: Number(purchase[5]),
+        installments_total: Number(purchase[6]),
+        balance_before: toNumber(purchase[8]),
+        capital_paid: toNumber(purchase[9]),
+        balance_after: toNumber(purchase[10]),
+        rate: Number(purchase[4])
+      });
       if (Number(purchase[4]) > 0) {
         allRates.push(Number(purchase[4]));
         if (section === 'current') currentRates.push(Number(purchase[4]));
@@ -161,7 +173,8 @@ function parse(pages: StatementPages): ParsedStatement {
     items,
     skipped_installments: skipped,
     warnings,
-    account_hint: { credit_limit: creditLimit, balance, annual_rate: annualRate }
+    account_hint: { credit_limit: creditLimit, balance, annual_rate: annualRate },
+    installments
   };
 }
 

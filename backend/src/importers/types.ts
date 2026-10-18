@@ -14,6 +14,19 @@ export interface DraftItem {
   selected: boolean;
 }
 
+/** One row of a statement's installment table: the state of a purchase at the cut-off date. */
+export interface InstallmentRow {
+  purchase_date: string;
+  description: string;
+  original_value: number;
+  installment_no: number;
+  installments_total: number;
+  balance_before: number;
+  capital_paid: number;
+  balance_after: number;
+  rate: number;
+}
+
 /** What the statement says about the card itself; used to create the account without typing it. */
 export interface AccountHint {
   credit_limit: number | null;
@@ -34,6 +47,8 @@ export interface ParsedStatement {
   skipped_installments: number;
   warnings: string[];
   account_hint: AccountHint;
+  /** Installment table, when the bank prints one (used to link payments to the purchases they paid). */
+  installments?: InstallmentRow[];
 }
 
 /** Lines of text per page, as rebuilt from the PDF (columns separated by 3+ spaces). */

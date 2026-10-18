@@ -3,6 +3,8 @@ import express, { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { Account, INTEREST_CATEGORY } from '../models/Account';
 import { Category } from '../models/Category';
+import { Installment } from '../models/Installment';
+import { linkAccountPayments } from '../services/paymentLinker';
 import { Transaction, TransactionInput } from '../models/Transaction';
 import { SUPPORTED_BANKS, parseStatement } from '../importers';
 import { suggestCategoryName } from '../importers/categorize';
@@ -50,6 +52,14 @@ router.post(
       if (!parsed) {
         res.status(422).json({ error: `No reconozco el formato de este archivo. PDF de: ${SUPPORTED_BANKS.join(', ')}. Excel: movimientos de BBVA.` });
         return;
+      }
+
+      // Keep the statement's installment table (not movements) so payments can be linked to purchases,
+      // even when every movement of this statement is already inside the card balance.
+      let linked = 0;
+      if (parsed.installments?.length && parsed.period_end) {
+        await Installment.replaceSnapshot(accountId, parsed.period_end, parsed.installments);
+        linked = await linkAccountPayments(accountId);
       }
 
       const categories = await Category.findAll();
@@ -113,6 +123,7 @@ router.post(
         period_end: parsed.period_end,
         skipped_installments: parsed.skipped_installments,
         warnings: parsed.warnings,
+        linked_payments: linked,
         items
       });
     } catch (error) {
@@ -181,7 +192,8 @@ router.post('/commit', async (req: Request, res: Response, next: NextFunction) =
       if (await Transaction.createImported(row, item.import_hash)) inserted++;
       else duplicates++;
     }
-    res.status(201).json({ inserted, skipped_duplicates: duplicates });
+    const linked = await linkAccountPayments(accountId);
+    res.status(201).json({ inserted, skipped_duplicates: duplicates, linked_payments: linked });
   } catch (error) {
     next(error);
   }

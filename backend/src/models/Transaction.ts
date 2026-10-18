@@ -17,6 +17,8 @@ export interface ITransaction {
   category_name: string | null;
   account_id: number | null;
   account_name: string | null;
+  /** Purchase a "PAGO COMPRA ESPECIF." payment settled, when it could be determined. */
+  linked_purchase: { description: string; purchase_date: string; original_value: number; balance: number } | null;
   date: string;
 }
 
@@ -41,7 +43,7 @@ export interface CategoryTotal {
 const SELECT_WITH_CATEGORY = `
   SELECT t.id, t.type, t.description, t.amount_cop, t.original_amount,
          t.original_currency, t.exchange_rate, t.category_id,
-         c.name AS category_name, t.account_id, a.name AS account_name, t.date
+         c.name AS category_name, t.account_id, a.name AS account_name, t.linked_purchase, t.date
   FROM transactions t
   LEFT JOIN categories c ON c.id = t.category_id
   LEFT JOIN accounts a ON a.id = t.account_id
