@@ -49,7 +49,7 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
   }, [accountId, month]);
 
   const back = (
-    <button onClick={onBack} className="text-sm text-blue-700 hover:underline">← Todas las tarjetas</button>
+    <button onClick={onBack} className="text-sm text-blue-700 hover:underline">← Todas las deudas</button>
   );
   if (error) return <div className="space-y-4">{back}<div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div></div>;
   if (!detail) return <div className="space-y-4">{back}<p className="text-gray-500">Cargando…</p></div>;

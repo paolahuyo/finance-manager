@@ -20,7 +20,7 @@ const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: 'summary', label: 'Resumen' },
   { id: 'transactions', label: 'Movimientos' },
   { id: 'plan', label: 'Plan de pagos' },
-  { id: 'accounts', label: 'Tarjetas' },
+  { id: 'accounts', label: 'Deudas' },
   { id: 'import', label: 'Importar' }
 ];
 

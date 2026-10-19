@@ -163,7 +163,7 @@ export class Account {
                    WHERE t.account_id = a.id AND t.type = 'payment'
                      AND (a.due_cutoff IS NULL OR t.date >= a.due_cutoff)), 0) AS paid_since_cutoff
        FROM accounts a
-       WHERE a.due_date IS NOT NULL
+       WHERE a.due_date IS NOT NULL AND a.kind <> 'loan'
        ORDER BY a.due_date, a.name`
     );
     return rows.map(r => ({ ...(r as UpcomingPayment), paid_since_cutoff: Number(r.paid_since_cutoff) }));
