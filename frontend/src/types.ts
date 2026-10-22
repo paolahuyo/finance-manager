@@ -223,3 +223,13 @@ export interface PaymentPlan {
   totals: { inflows: number; minimums: number; fixed: number; reserve: number; extra: number; free: number; monthly_saving: number };
   warnings: string[];
 }
+
+export interface FeeBreakdownRow {
+  account_id: number;
+  account_name: string;
+  category: string;
+  month_total: number;
+  year_total: number;
+  all_time_total: number;
+  last_date: string;
+}

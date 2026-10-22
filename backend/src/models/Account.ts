@@ -59,6 +59,16 @@ export interface UpcomingPayment {
   paid_since_cutoff: number;
 }
 
+export interface FeeBreakdownRow {
+  account_id: number;
+  account_name: string;
+  category: string;
+  month_total: number;
+  year_total: number;
+  all_time_total: number;
+  last_date: string;
+}
+
 export interface IAccountStats extends IAccount {
   /** What is owed now: opening balance + charges - payments (all time). */
   balance: number;
@@ -153,6 +163,31 @@ export class Account {
        data.due_date, data.minimum_payment, data.total_payment, data.due_cutoff, data.allows_directed_payments ? 1 : 0, data.notes, id]
     );
     return result.affectedRows ? this.findById(id) : undefined;
+  }
+
+  /** Bank charges (handling fee, insurance, commissions) per account and category. */
+  static async feeBreakdown(month: string): Promise<FeeBreakdownRow[]> {
+    const { start, end } = monthRange(month);
+    const yearStart = `${month.slice(0, 4)}-01-01`;
+    const [rows] = await getPool().query<RowDataPacket[]>(
+      `SELECT a.id AS account_id, a.name AS account_name, c.name AS category,
+         COALESCE(SUM(CASE WHEN t.date >= ? AND t.date < ? THEN t.amount_cop END), 0) AS month_total,
+         COALESCE(SUM(CASE WHEN t.date >= ? AND t.date < ? THEN t.amount_cop END), 0) AS year_total,
+         SUM(t.amount_cop) AS all_time_total,
+         MAX(t.date) AS last_date
+       FROM transactions t
+       JOIN accounts a ON a.id = t.account_id
+       JOIN categories c ON c.id = t.category_id
+       WHERE t.type = 'expense' AND c.name IN (?)
+       GROUP BY a.id, a.name, c.name
+       ORDER BY a.kind, a.name, c.name`,
+      [start, end, yearStart, end, [...FEE_CATEGORIES]]
+    );
+    return rows.map(r => ({
+      account_id: r.account_id, account_name: r.account_name, category: r.category,
+      month_total: Number(r.month_total), year_total: Number(r.year_total),
+      all_time_total: Number(r.all_time_total), last_date: r.last_date
+    }));
   }
 
   /** Next payment of every card that has one, with what has been paid since that statement's cut-off. */

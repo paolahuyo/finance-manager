@@ -80,6 +80,19 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+router.get('/fees', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const month = req.query.month ?? currentMonth();
+    if (!isValidMonth(month)) {
+      res.status(400).json({ error: 'month must be YYYY-MM' });
+      return;
+    }
+    res.json(await Account.feeBreakdown(month));
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/installments', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     res.json(await Installment.latestForAll());
