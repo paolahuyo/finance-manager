@@ -1,6 +1,7 @@
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { getPool } from '../db/init';
 import { monthRange } from '../utils/month';
+import { FEE_CATEGORIES, INTEREST_CATEGORY } from './Account';
 
 export type TransactionType = 'income' | 'expense' | 'payment';
 export type Currency = 'COP' | 'USD';
@@ -50,6 +51,21 @@ const SELECT_WITH_CATEGORY = `
 `;
 
 export class Transaction {
+  /** Purchases charged to credit cards in a month, without interest or bank fees. */
+  static async cardPurchases(month: string): Promise<number> {
+    const { start, end } = monthRange(month);
+    const [rows] = await getPool().query<RowDataPacket[]>(
+      `SELECT COALESCE(SUM(t.amount_cop), 0) AS total
+       FROM transactions t
+       JOIN accounts a ON a.id = t.account_id AND a.kind = 'credit_card'
+       LEFT JOIN categories c ON c.id = t.category_id
+       WHERE t.type = 'expense' AND t.date >= ? AND t.date < ?
+         AND (c.name IS NULL OR c.name NOT IN (?))`,
+      [start, end, [INTEREST_CATEGORY, ...FEE_CATEGORIES]]
+    );
+    return Number(rows[0]?.total ?? 0);
+  }
+
   static async findByMonth(month: string): Promise<ITransaction[]> {
     const { start, end } = monthRange(month);
     const [rows] = await getPool().query<RowDataPacket[]>(

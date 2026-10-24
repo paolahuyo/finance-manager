@@ -12,6 +12,11 @@ interface AccountsPageProps {
 }
 
 const KIND_LABEL = { credit_card: 'Tarjeta', loan: 'Préstamo', personal: 'Persona' } as const;
+const SECTIONS: ReadonlyArray<{ kind: Account['kind']; title: string; hint: string }> = [
+  { kind: 'credit_card', title: 'Tarjetas de crédito', hint: 'Haz clic en una tarjeta para ver sus compras a cuotas, abonos y movimientos.' },
+  { kind: 'loan', title: 'Préstamos y libranzas', hint: 'Las libranzas se descuentan de nómina; el sueldo se registra neto.' },
+  { kind: 'personal', title: 'Deudas con personas', hint: 'Dinero que le debes a alguien.' }
+];
 const th = 'px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap';
 const td = 'px-4 py-3 text-sm text-gray-900 whitespace-nowrap';
 
@@ -37,57 +42,70 @@ export default function AccountsPage({ month, accounts, onCreate, onDelete, onOp
               Aún no tienes tarjetas ni deudas registradas.
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="p-6 border-b">
-                <h2 className="text-xl font-bold">Tarjetas y deudas</h2>
-                <p className="text-sm text-gray-600">Haz clic en una tarjeta para ver sus compras a cuotas, abonos y movimientos.</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className={th}>Nombre</th>
-                      <th className={th}>Saldo</th>
-                      <th className={th}>Tasa E.A.</th>
-                      <th className={th}>Interés mes</th>
-                      <th className={th}>Interés año</th>
-                      <th className={th}>Cargos mes</th>
-                      <th className={th}>Abonos mes</th>
-                      <th className={th}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {accounts.map(a => {
-                      const used = a.credit_limit ? Math.round((a.balance / a.credit_limit) * 100) : null;
-                      return (
-                        <tr key={a.id} className="border-b hover:bg-gray-50">
-                          <td className={td}>
-                            <button onClick={() => onOpen(a.id)} className="font-medium text-blue-700 hover:underline text-left">
-                              {a.name} →
-                            </button>
-                            <p className="text-xs text-gray-500">
-                              {KIND_LABEL[a.kind]}{a.bank ? ` · ${a.bank}` : ''}
-                              {used !== null && ` · cupo usado ${used}%`}
-                            </p>
-                          </td>
-                          <td className={td}>{formatCOP(a.balance)}</td>
-                          <td className={td}>{a.annual_rate !== null ? `${a.annual_rate}%` : '—'}</td>
-                          <td className={`${td} text-red-600`}>{formatCOP(a.month_interest)}</td>
-                          <td className={`${td} text-red-600`}>{formatCOP(a.year_interest)}</td>
-                          <td className={`${td} text-red-600`} title="Cuota de manejo, seguros y comisiones">{formatCOP(a.month_fees)}</td>
-                          <td className={`${td} text-green-600`}>{formatCOP(a.month_payments)}</td>
-                          <td className={td}>
-                            <button onClick={() => onDelete(a.id)} className="text-gray-400 hover:text-red-600"
-                              aria-label={`Eliminar ${a.name}`}>
-                              Eliminar
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            <div className="space-y-6">
+              {SECTIONS.map(section => {
+                const list = accounts.filter(a => a.kind === section.kind);
+                if (list.length === 0) return null;
+                return (
+                  <div key={section.kind} className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="p-6 border-b flex flex-wrap items-baseline justify-between gap-2">
+                      <div>
+                        <h2 className="text-xl font-bold">{section.title}</h2>
+                        <p className="text-sm text-gray-600">{section.hint}</p>
+                      </div>
+                      <p className="text-sm text-gray-700">
+                        Deuda: <strong className="text-red-600">{formatCOP(list.reduce((t, a) => t + a.balance, 0))}</strong>
+                      </p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b">
+                          <tr>
+                            <th className={th}>Nombre</th>
+                            <th className={th}>Saldo</th>
+                            <th className={th}>Tasa E.A.</th>
+                            <th className={th}>Interés mes</th>
+                            <th className={th}>Interés año</th>
+                            <th className={th}>Cargos mes</th>
+                            <th className={th}>Abonos mes</th>
+                            <th className={th}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {list.map(a => {
+                            const used = a.credit_limit ? Math.round((a.balance / a.credit_limit) * 100) : null;
+                            return (
+                              <tr key={a.id} className="border-b hover:bg-gray-50">
+                                <td className={td}>
+                                  <button onClick={() => onOpen(a.id)} className="font-medium text-blue-700 hover:underline text-left">
+                                    {a.name} →
+                                  </button>
+                                  <p className="text-xs text-gray-500">
+                                    {a.bank ?? KIND_LABEL[a.kind]}
+                                    {used !== null && ` · cupo usado ${used}%`}
+                                  </p>
+                                </td>
+                                <td className={td}>{formatCOP(a.balance)}</td>
+                                <td className={td}>{a.annual_rate !== null ? `${a.annual_rate}%` : '—'}</td>
+                                <td className={`${td} text-red-600`}>{formatCOP(a.month_interest)}</td>
+                                <td className={`${td} text-red-600`}>{formatCOP(a.year_interest)}</td>
+                                <td className={`${td} text-red-600`} title="Cuota de manejo, seguros y comisiones">{formatCOP(a.month_fees)}</td>
+                                <td className={`${td} text-green-600`}>{formatCOP(a.month_payments)}</td>
+                                <td className={td}>
+                                  <button onClick={() => onDelete(a.id)} className="text-gray-400 hover:text-red-600"
+                                    aria-label={`Eliminar ${a.name}`}>
+                                    Eliminar
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

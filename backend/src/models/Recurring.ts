@@ -50,6 +50,15 @@ export class Recurring {
     return result.insertId;
   }
 
+  static async update(id: number, data: RecurringInput): Promise<boolean> {
+    const [result] = await getPool().query<ResultSetHeader>(
+      `UPDATE recurring_items SET type = ?, description = ?, amount_cop = ?, category_id = ?, day_of_month = ?
+       WHERE id = ? AND active = 1`,
+      [data.type, data.description, data.amount_cop, data.category_id, data.day_of_month, id]
+    );
+    return result.affectedRows > 0;
+  }
+
   static async deactivate(id: number): Promise<boolean> {
     const [result] = await getPool().query<ResultSetHeader>('UPDATE recurring_items SET active = 0 WHERE id = ?', [id]);
     return result.affectedRows > 0;

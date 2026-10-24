@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { RecurringItem, CardInstallments, UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthSummary, Transaction, TransactionPayload, TrmInfo } from './types';
+import type { FeeBreakdownRow, RecurringItem, CardInstallments, UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthSummary, PaymentPlan, PlanRequest, Transaction, TransactionPayload, TrmInfo } from './types';
 
 const http = axios.create({ baseURL: '/api' });
 
@@ -20,6 +20,8 @@ export const api = {
     (await http.get<Transaction[]>('/transactions', { params: { month } })).data,
   createTransaction: async (payload: TransactionPayload): Promise<Transaction> =>
     (await http.post<Transaction>('/transactions', payload)).data,
+  updateTransaction: async (id: number, payload: TransactionPayload): Promise<Transaction> =>
+    (await http.put<Transaction>(`/transactions/${id}`, payload)).data,
   deleteTransaction: async (id: number): Promise<void> => {
     await http.delete(`/transactions/${id}`);
   },
@@ -42,6 +44,9 @@ export const api = {
   createRecurring: async (payload: { type: 'income' | 'expense'; description: string; amount: number; category_id: number | null; day_of_month: number }): Promise<void> => {
     await http.post('/recurring', payload);
   },
+  updateRecurring: async (id: number, payload: { type: 'income' | 'expense'; description: string; amount: number; category_id: number | null; day_of_month: number }): Promise<void> => {
+    await http.put(`/recurring/${id}`, payload);
+  },
   deleteRecurring: async (id: number): Promise<void> => {
     await http.delete(`/recurring/${id}`);
   },
@@ -51,6 +56,8 @@ export const api = {
   },
   installmentsByCard: async (): Promise<CardInstallments[]> =>
     (await http.get<CardInstallments[]>('/accounts/installments')).data,
+  feeBreakdown: async (month: string): Promise<FeeBreakdownRow[]> =>
+    (await http.get<FeeBreakdownRow[]>('/accounts/fees', { params: { month } })).data,
   upcomingPayments: async (): Promise<UpcomingPayment[]> =>
     (await http.get<UpcomingPayment[]>('/accounts/upcoming')).data,
   accountDetail: async (id: number, month: string): Promise<AccountDetail> =>
@@ -58,6 +65,21 @@ export const api = {
   createAccount: async (payload: AccountPayload): Promise<void> => {
     await http.post('/accounts', payload);
   },
+  setDirectedPayments: async (account: Account, allows: boolean): Promise<void> => {
+    await http.put(`/accounts/${account.id}`, {
+      name: account.name,
+      bank: account.bank,
+      kind: account.kind,
+      annual_rate: account.annual_rate,
+      credit_limit: account.credit_limit,
+      opening_balance: account.opening_balance,
+      notes: account.notes,
+      allows_directed_payments: allows
+    });
+  },
+  suggestedReserve: async (today: string): Promise<number> =>
+    (await http.get<{ amount: number }>('/plan/suggested-reserve', { params: { today } })).data.amount,
+  paymentPlan: async (payload: PlanRequest): Promise<PaymentPlan> => (await http.post<PaymentPlan>('/plan', payload)).data,
   deleteAccount: async (id: number): Promise<void> => {
     await http.delete(`/accounts/${id}`);
   },

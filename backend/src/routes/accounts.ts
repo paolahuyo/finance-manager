@@ -33,6 +33,7 @@ const accountSchema = z.object({
   minimum_payment: optionalAmount,
   total_payment: optionalAmount,
   due_cutoff: optionalDate,
+  allows_directed_payments: z.boolean().optional(),
   notes: optionalText
 });
 
@@ -58,6 +59,7 @@ function parseBody(req: Request, res: Response, current?: AccountInput): Account
     minimum_payment: d.minimum_payment === undefined ? current?.minimum_payment ?? null : d.minimum_payment,
     total_payment: d.total_payment === undefined ? current?.total_payment ?? null : d.total_payment,
     due_cutoff: d.due_cutoff === undefined ? current?.due_cutoff ?? null : d.due_cutoff,
+    allows_directed_payments: d.allows_directed_payments ?? current?.allows_directed_payments ?? false,
     notes: d.notes ?? null
   };
 }
@@ -73,6 +75,19 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return;
     }
     res.json(await Account.findAllWithStats(month));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/fees', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const month = req.query.month ?? currentMonth();
+    if (!isValidMonth(month)) {
+      res.status(400).json({ error: 'month must be YYYY-MM' });
+      return;
+    }
+    res.json(await Account.feeBreakdown(month));
   } catch (error) {
     next(error);
   }

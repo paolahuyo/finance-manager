@@ -58,7 +58,7 @@ después del primer sueldo pero antes del siguiente).
 `cash_now` (hoy), cada ingreso recurrente del horizonte (su fecha), cada `extra_income` (su fecha).
 
 1. **Mínimos.** Para cada mínimo pendiente con `due_date` dentro del horizonte, ordenados por `due_date`:
-   tomar dinero de la bolsa disponible **más temprana que llegue antes de `due_date`**. Paso con fecha
+   tomar dinero de la bolsa **más tardía que llegue antes de (o el día de) `due_date`** (así el dinero más temprano ataca antes la deuda cara; es lo que reproduce el ejemplo de aceptación), y si no alcanza, de las anteriores. Paso con fecha
    = `max(fecha de la bolsa, today)` y ventana "antes de `due_date`". Si no alcanza, generar el paso por lo
    que haya y una **advertencia** con el faltante.
 2. **Gastos fijos.** Cada gasto recurrente del horizonte sale de la bolsa del ingreso de ese día (o de la

@@ -49,7 +49,7 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
   }, [accountId, month]);
 
   const back = (
-    <button onClick={onBack} className="text-sm text-blue-700 hover:underline">← Todas las tarjetas</button>
+    <button onClick={onBack} className="text-sm text-blue-700 hover:underline">← Todas las deudas</button>
   );
   if (error) return <div className="space-y-4">{back}<div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div></div>;
   if (!detail) return <div className="space-y-4">{back}<p className="text-gray-500">Cargando…</p></div>;
@@ -84,6 +84,19 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
           {account.balance_as_of ? ` · saldo tomado del extracto con corte ${formatLongDay(account.balance_as_of)}` : ''}
           {account.notes ? ` · ${account.notes}` : ''}
         </p>
+        <label className="flex items-center gap-2 text-sm text-gray-700 mt-1">
+          <input
+            type="checkbox"
+            checked={account.allows_directed_payments}
+            onChange={e =>
+              api
+                .setDirectedPayments(account, e.target.checked)
+                .then(() => setDetail({ ...detail, account: { ...account, allows_directed_payments: e.target.checked } }))
+                .catch(err => setError(errorMessage(err, 'No se pudo guardar el cambio')))
+            }
+          />
+          El banco permite abonar a una compra específica (se usa en el plan de pagos)
+        </label>
         <p className="text-sm text-gray-600">
           En el año: intereses {formatCOP(account.year_interest)} · manejo, seguros y comisiones {formatCOP(account.year_fees)}
         </p>

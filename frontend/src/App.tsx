@@ -5,20 +5,23 @@ import { currentMonth, todayISO } from './utils/format';
 import Header from './components/Header';
 import MonthNavigator from './components/MonthNavigator';
 import UpcomingPayments from './components/UpcomingPayments';
+import FeesBreakdown from './components/FeesBreakdown';
 import InterestBreakdown from './components/InterestBreakdown';
 import MonthPlan from './components/MonthPlan';
 import AccountsPage from './pages/AccountsPage';
 import AccountDetailPage from './pages/AccountDetailPage';
+import PaymentPlanPage from './pages/PaymentPlanPage';
 import ImportPage from './pages/ImportPage';
 import SummaryPage from './pages/SummaryPage';
 import TransactionsPage from './pages/TransactionsPage';
 
-type Tab = 'summary' | 'transactions' | 'accounts' | 'import';
+type Tab = 'summary' | 'transactions' | 'plan' | 'accounts' | 'import';
 
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: 'summary', label: 'Resumen' },
   { id: 'transactions', label: 'Movimientos' },
-  { id: 'accounts', label: 'Tarjetas' },
+  { id: 'plan', label: 'Plan de pagos' },
+  { id: 'accounts', label: 'Deudas' },
   { id: 'import', label: 'Importar' }
 ];
 
@@ -78,6 +81,19 @@ function App(): JSX.Element {
       await api.createTransaction(payload);
       setError('');
       // Show the month the entry belongs to, so it never "disappears" after saving.
+      const entryMonth = payload.date.slice(0, 7);
+      if (entryMonth !== month) setMonth(entryMonth);
+      else await refresh();
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo guardar el movimiento'));
+      throw err;
+    }
+  };
+
+  const handleUpdate = async (id: number, payload: TransactionPayload): Promise<void> => {
+    try {
+      await api.updateTransaction(id, payload);
+      setError('');
       const entryMonth = payload.date.slice(0, 7);
       if (entryMonth !== month) setMonth(entryMonth);
       else await refresh();
@@ -159,9 +175,11 @@ function App(): JSX.Element {
             transactions={transactions}
             loading={loading}
             onCreate={handleCreate}
+            onUpdate={handleUpdate}
             onDelete={handleDelete}
           />
         )}
+        {tab === 'plan' && <PaymentPlanPage onChanged={refresh} />}
         {tab === 'import' && <ImportPage accounts={accounts} categories={categories} onImported={refresh} />}
         {tab === 'accounts' && openAccountId !== null && (
           <AccountDetailPage accountId={openAccountId} month={month} onBack={() => setOpenAccountId(null)} />
@@ -174,6 +192,9 @@ function App(): JSX.Element {
             onDelete={handleDeleteAccount}
             onOpen={setOpenAccountId}
           />
+        )}
+        {tab === 'accounts' && openAccountId === null && (
+          <FeesBreakdown month={month} refreshKey={accounts} onOpen={setOpenAccountId} />
         )}
         {tab === 'accounts' && openAccountId === null && (
           <InterestBreakdown refreshKey={accounts} onOpen={setOpenAccountId} />
