@@ -1,6 +1,7 @@
 import { useEffect, useState, FormEvent } from 'react';
 import type { Account, Category, Currency, Transaction, TransactionPayload, TransactionType } from '../types';
 import { api } from '../api';
+import MoneyInput from './MoneyInput';
 import { formatCOP, formatLongDay, todayISO } from '../utils/format';
 
 interface TransactionFormProps {
@@ -151,14 +152,11 @@ export default function TransactionForm({
       <div className="grid grid-cols-3 gap-2">
         <div className="col-span-2">
           <label className={labelClass} htmlFor="tx-amount">Monto</label>
-          <input
+          <MoneyInput
             id="tx-amount"
             className={inputClass}
-            type="number"
-            min="0"
-            step="any"
             value={amount}
-            onChange={e => setAmount(e.target.value)}
+            onChange={setAmount}
             placeholder="0"
             required
           />

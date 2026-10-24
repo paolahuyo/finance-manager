@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react';
+import MoneyInput from './MoneyInput';
 import type { AccountKind, AccountPayload } from '../types';
 
 interface AccountFormProps {
@@ -74,15 +75,15 @@ export default function AccountForm({ onSubmit }: AccountFormProps): JSX.Element
         </div>
         <div>
           <label className={labelClass} htmlFor="acc-limit">Cupo (COP)</label>
-          <input id="acc-limit" className={inputClass} type="number" min="0" step="any"
-            value={form.credit_limit} onChange={e => set('credit_limit', e.target.value)} placeholder="0" />
+          <MoneyInput id="acc-limit" className={inputClass}
+            value={form.credit_limit} onChange={v => set('credit_limit', v)} placeholder="0" />
         </div>
       </div>
 
       <div>
         <label className={labelClass} htmlFor="acc-opening">Saldo actual que debes (COP)</label>
-        <input id="acc-opening" className={inputClass} type="number" min="0" step="any"
-          value={form.opening_balance} onChange={e => set('opening_balance', e.target.value)} placeholder="0" />
+        <MoneyInput id="acc-opening" className={inputClass}
+          value={form.opening_balance} onChange={v => set('opening_balance', v)} placeholder="0" />
         <p className="text-xs text-gray-500 mt-1">
           Lo que debes hoy. Desde aquí se suman tus compras y se restan tus abonos.
         </p>

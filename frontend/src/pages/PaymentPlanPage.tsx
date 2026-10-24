@@ -1,6 +1,7 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { api, errorMessage } from '../api';
 import type { Account, CardInstallments, PaymentPlan, PlanExtraIncome, PlanStep, PlanStrategy } from '../types';
+import MoneyInput from '../components/MoneyInput';
 import { currentMonth, formatCOP, formatLongDay, todayISO } from '../utils/format';
 
 interface PaymentPlanPageProps {
@@ -121,13 +122,11 @@ export default function PaymentPlanPage({ onChanged }: PaymentPlanPageProps): JS
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelClass} htmlFor="plan-cash">Dinero disponible hoy (COP)</label>
-            <input id="plan-cash" className={inputClass} type="number" min="0" step="any" required value={cashNow}
-              onChange={e => setCashNow(e.target.value)} />
+            <MoneyInput id="plan-cash" className={inputClass} required value={cashNow} onChange={setCashNow} />
           </div>
           <div>
             <label className={labelClass} htmlFor="plan-reserve">Reserva para compras a 1 cuota (COP)</label>
-            <input id="plan-reserve" className={inputClass} type="number" min="0" step="any" value={reserve}
-              onChange={e => setReserve(e.target.value)} />
+            <MoneyInput id="plan-reserve" className={inputClass} value={reserve} onChange={setReserve} />
             <p className="text-xs text-gray-500 mt-1">Sugerido: lo gastado con tarjeta el último mes completo.</p>
           </div>
           <div>
@@ -152,8 +151,8 @@ export default function PaymentPlanPage({ onChanged }: PaymentPlanPageProps): JS
             <div key={i} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
               <input aria-label="Descripción" className={inputClass} placeholder="Descripción" value={x.description}
                 onChange={e => setExtra(i, { description: e.target.value })} />
-              <input aria-label="Monto" className={inputClass} type="number" min="0" step="any" placeholder="Monto" value={x.amount}
-                onChange={e => setExtra(i, { amount: e.target.value })} />
+              <MoneyInput aria-label="Monto" className={inputClass} placeholder="Monto" value={x.amount}
+                onChange={v => setExtra(i, { amount: v })} />
               <input aria-label="Fecha" className={inputClass} type="date" value={x.date}
                 onChange={e => setExtra(i, { date: e.target.value })} />
               <select aria-label="Compra destino" className={inputClass} value={x.target}

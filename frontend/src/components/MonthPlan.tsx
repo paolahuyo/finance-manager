@@ -1,5 +1,6 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { api, errorMessage } from '../api';
+import MoneyInput from './MoneyInput';
 import type { Category, RecurringItem, UpcomingPayment } from '../types';
 import { formatCOP, formatLongDay, todayISO } from '../utils/format';
 
@@ -160,7 +161,7 @@ export default function MonthPlan({ categories, refreshKey, onChanged }: MonthPl
             <option value="income">Ingreso fijo</option>
           </select>
           <input className={input} placeholder="Descripción (ej. Internet)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required aria-label="Descripción" />
-          <input className={`${input} w-36`} type="number" min="0" step="any" placeholder="Monto" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required aria-label="Monto" />
+          <MoneyInput className={`${input} w-36`} placeholder="Monto" value={form.amount} onChange={v => setForm({ ...form, amount: v })} required aria-label="Monto" />
           <label className="text-sm">Día <input className={`${input} w-16`} type="number" min="1" max="31" value={form.day} onChange={e => setForm({ ...form, day: e.target.value })} required /></label>
           <select className={input} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} aria-label="Categoría">
             <option value="">Sin categoría</option>
