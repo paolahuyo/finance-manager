@@ -53,6 +53,19 @@ export interface MonthSummary {
   incomeByCategory: CategoryTotal[];
 }
 
+export interface MonthHistoryPoint {
+  month: string;
+  income: number;
+  expense: number;
+  interest: number;
+}
+
+/** A month marked as "not normal" (e.g. a trip). */
+export interface MonthTag {
+  month: string;
+  tag: string;
+}
+
 export type AccountKind = 'credit_card' | 'loan' | 'personal';
 
 export interface Account {

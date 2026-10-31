@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { FeeBreakdownRow, RecurringItem, CardInstallments, UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthSummary, PaymentPlan, PlanRequest, Transaction, TransactionPayload, TrmInfo } from './types';
+import type { FeeBreakdownRow, RecurringItem, CardInstallments, UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthHistoryPoint, MonthSummary, MonthTag, PaymentPlan, PlanRequest, Transaction, TransactionPayload, TrmInfo } from './types';
 
 const http = axios.create({ baseURL: '/api' });
 
@@ -28,6 +28,19 @@ export const api = {
 
   summary: async (month: string): Promise<MonthSummary> =>
     (await http.get<MonthSummary>('/summary', { params: { month } })).data,
+
+  summaryHistory: async (months: number): Promise<MonthHistoryPoint[]> =>
+    (await http.get<MonthHistoryPoint[]>('/summary/history', { params: { months } })).data,
+
+  monthTags: async (): Promise<MonthTag[]> => (await http.get<MonthTag[]>('/month-tags')).data,
+
+  setMonthTag: async (month: string): Promise<void> => {
+    await http.put(`/month-tags/${month}`, { tag: 'viaje' });
+  },
+
+  removeMonthTag: async (month: string): Promise<void> => {
+    await http.delete(`/month-tags/${month}`);
+  },
 
   /** Official TRM in force on `date`, or null if it cannot be fetched. */
   trmRate: async (date: string): Promise<TrmInfo | null> => {

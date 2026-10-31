@@ -11,6 +11,7 @@ import importsRouter from './routes/imports';
 import recurringRouter from './routes/recurring';
 import loansRouter from './routes/loans';
 import planRouter from './routes/plan';
+import monthTagsRouter from './routes/monthTags';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api/imports', importsRouter);
 app.use('/api/recurring', recurringRouter);
 app.use('/api/loans', loansRouter);
 app.use('/api/plan', planRouter);
+app.use('/api/month-tags', monthTagsRouter);
 
 // Health check
 app.get('/health', (_req, res) => {

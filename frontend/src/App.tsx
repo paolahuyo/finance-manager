@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, errorMessage } from './api';
-import type { Account, AccountPayload, Category, MonthSummary, Transaction, TransactionPayload } from './types';
+import type { Account, AccountPayload, Category, MonthHistoryPoint, MonthSummary, MonthTag, Transaction, TransactionPayload } from './types';
 import { currentMonth, todayISO } from './utils/format';
 import Header from './components/Header';
 import MonthNavigator from './components/MonthNavigator';
@@ -32,6 +32,8 @@ function App(): JSX.Element {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<MonthSummary | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [history, setHistory] = useState<MonthHistoryPoint[]>([]);
+  const [tags, setTags] = useState<MonthTag[]>([]);
   const [openAccountId, setOpenAccountId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -40,26 +42,32 @@ function App(): JSX.Element {
     api.categories().then(setCategories).catch(() => setError('No se pudieron cargar las categorías'));
   }, []);
 
-  const loadMonth = useCallback(async (target: string): Promise<{ txs: Transaction[]; sum: MonthSummary; accs: Account[] }> => {
+  const loadMonth = useCallback(async (target: string): Promise<{
+    txs: Transaction[]; sum: MonthSummary; accs: Account[]; hist: MonthHistoryPoint[]; tg: MonthTag[];
+  }> => {
     // Fixed monthly items and payroll loan installments become movements once their day arrives.
     await api.applyRecurring(target, todayISO()).catch(() => undefined);
-    const [txs, sum, accs] = await Promise.all([
+    const [txs, sum, accs, hist, tg] = await Promise.all([
       api.transactions(target),
       api.summary(target),
-      api.accounts(target)
+      api.accounts(target),
+      api.summaryHistory(6),
+      api.monthTags()
     ]);
-    return { txs, sum, accs };
+    return { txs, sum, accs, hist, tg };
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     loadMonth(month)
-      .then(({ txs, sum, accs }) => {
+      .then(({ txs, sum, accs, hist, tg }) => {
         if (cancelled) return;
         setTransactions(txs);
         setSummary(sum);
         setAccounts(accs);
+        setHistory(hist);
+        setTags(tg);
         setError('');
       })
       .catch(() => !cancelled && setError('No se pudieron cargar los datos del mes'))
@@ -70,10 +78,24 @@ function App(): JSX.Element {
   }, [month, loadMonth]);
 
   const refresh = async (): Promise<void> => {
-    const { txs, sum, accs } = await loadMonth(month);
+    const { txs, sum, accs, hist, tg } = await loadMonth(month);
     setTransactions(txs);
     setSummary(sum);
     setAccounts(accs);
+    setHistory(hist);
+    setTags(tg);
+  };
+
+  const handleToggleTravel = async (): Promise<void> => {
+    const tagged = tags.some(t => t.month === month && t.tag === 'viaje');
+    try {
+      if (tagged) await api.removeMonthTag(month);
+      else await api.setMonthTag(month);
+      setTags(await api.monthTags());
+      setError('');
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo guardar la marca del mes'));
+    }
   };
 
   const handleCreate = async (payload: TransactionPayload): Promise<void> => {
@@ -167,7 +189,16 @@ function App(): JSX.Element {
 
         {(tab === 'summary' || (tab === 'accounts' && openAccountId === null)) && <UpcomingPayments refreshKey={accounts} />}
         {tab === 'summary' && <MonthPlan categories={categories} refreshKey={accounts} onChanged={() => void refresh()} />}
-        {tab === 'summary' && <SummaryPage summary={summary} loading={loading} />}
+        {tab === 'summary' && (
+          <SummaryPage
+            summary={summary}
+            loading={loading}
+            month={month}
+            history={history}
+            tags={tags}
+            onToggleTravel={() => void handleToggleTravel()}
+          />
+        )}
         {tab === 'transactions' && (
           <TransactionsPage
             categories={categories}

@@ -168,6 +168,14 @@ export async function initDb(): Promise<void> {
       )
     `);
 
+    // Months that are not a normal month (e.g. a trip): charts show them apart and keep them out of the average.
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS month_tags (
+        month CHAR(7) PRIMARY KEY,
+        tag VARCHAR(30) NOT NULL
+      )
+    `);
+
     // Payment plan of a loan (payroll loans): each installment is applied on its date.
     await connection.query(`
       CREATE TABLE IF NOT EXISTS loan_schedule (

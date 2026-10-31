@@ -14,7 +14,7 @@ interface AccountsPageProps {
 const KIND_LABEL = { credit_card: 'Tarjeta', loan: 'Préstamo', personal: 'Persona' } as const;
 const SECTIONS: ReadonlyArray<{ kind: Account['kind']; title: string; hint: string }> = [
   { kind: 'credit_card', title: 'Tarjetas de crédito', hint: 'Haz clic en una tarjeta para ver sus compras a cuotas, abonos y movimientos.' },
-  { kind: 'loan', title: 'Préstamos y libranzas', hint: 'Las libranzas se descuentan de nómina; el sueldo se registra neto.' },
+  { kind: 'loan', title: 'Préstamos y libranzas', hint: 'Se descuentan de nómina y cobran menos que las tarjetas: primero baja las tarjetas.' },
   { kind: 'personal', title: 'Deudas con personas', hint: 'Dinero que le debes a alguien.' }
 ];
 const th = 'px-4 py-3 text-left text-sm font-medium text-gray-700 whitespace-nowrap';
@@ -22,11 +22,15 @@ const td = 'px-4 py-3 text-sm text-gray-900 whitespace-nowrap';
 
 export default function AccountsPage({ month, accounts, onCreate, onDelete, onOpen }: AccountsPageProps): JSX.Element {
   const sum = (pick: (a: Account) => number): number => accounts.reduce((total, a) => total + pick(a), 0);
+  // Loans are payroll-deducted and cheap; cards are the debt that costs the most, so they are shown apart.
+  const sumWhere = (keep: (a: Account) => boolean): number =>
+    accounts.filter(keep).reduce((total, a) => total + a.balance, 0);
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <SummaryCard title="Deuda total" value={formatCOP(sum(a => a.balance))} icon="💳" color="red" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <SummaryCard title="Deuda en tarjetas y personas" value={formatCOP(sumWhere(a => a.kind !== 'loan'))} icon="💳" color="red" />
+        <SummaryCard title="Libranzas (aparte, se descuentan de nómina)" value={formatCOP(sumWhere(a => a.kind === 'loan'))} icon="📄" color="blue" />
         <SummaryCard title={`Intereses · ${monthLabel(month)}`} value={formatCOP(sum(a => a.month_interest))} icon="🏦" color="red" />
         <SummaryCard title={`Manejo, seguros y comisiones · ${monthLabel(month)}`} value={formatCOP(sum(a => a.month_fees))} icon="🧾" color="red" />
         <SummaryCard title={`Abonos · ${monthLabel(month)}`} value={formatCOP(sum(a => a.month_payments))} icon="✅" color="green" />
