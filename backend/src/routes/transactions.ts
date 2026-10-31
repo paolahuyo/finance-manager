@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Account } from '../models/Account';
 import { Category } from '../models/Category';
 import { Transaction, TransactionInput } from '../models/Transaction';
+import { linkPendingDirectedPayments } from '../services/directedPaymentLinker';
 import { getTrmForDate, getUsdCopRate } from '../services/exchangeRate';
 import { currentMonth, isValidMonth } from '../utils/month';
 
@@ -102,7 +103,12 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await parseBody(req, res);
     if (!data) return;
-    res.status(201).json(await Transaction.create(data));
+    const created = await Transaction.create(data);
+    // A directed payment is tied to its purchase, so the card's purchase list shows the balance left.
+    if (data.type === 'payment' && data.account_id && /PAGO COMPRA ESPECIF/i.test(data.description)) {
+      await linkPendingDirectedPayments(data.account_id);
+    }
+    res.status(201).json(created);
   } catch (error) {
     next(error);
   }

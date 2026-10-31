@@ -176,6 +176,23 @@ export async function initDb(): Promise<void> {
       )
     `);
 
+    // Subscriptions the user wrote down by hand (charges the statements do not show as movements).
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS manual_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        amount_cop DECIMAL(15, 2) NOT NULL
+      )
+    `);
+
+    // What the user decided about each detected subscription (keep or cancel).
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS subscription_marks (
+        merchant_key VARCHAR(60) PRIMARY KEY,
+        status VARCHAR(10) NOT NULL
+      )
+    `);
+
     // Payment plan of a loan (payroll loans): each installment is applied on its date.
     await connection.query(`
       CREATE TABLE IF NOT EXISTS loan_schedule (

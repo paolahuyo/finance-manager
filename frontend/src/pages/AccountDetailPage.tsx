@@ -232,7 +232,14 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
                       <span className="text-xs text-gray-500"> · faltan {Math.max(r.installments_total - r.installment_no, 0)}</span>
                     </td>
                     <td className={`${td} text-right`}>{formatCOP(r.capital_paid)}</td>
-                    <td className={`${td} text-right font-medium`}>{formatCOP(r.balance_after)}</td>
+                    <td className={`${td} text-right font-medium`}>
+                      {formatCOP(r.balance_after)}
+                      {(r.paid_since ?? 0) > 0 && (
+                        <p className="text-xs font-normal text-green-700">
+                          {r.balance_after > 0 ? 'pagaste' : 'pagada con'} {formatCOP(r.paid_since ?? 0)} desde el corte
+                        </p>
+                      )}
+                    </td>
                     <td className={td}>
                       {r.rate > 0 ? (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">{r.rate}% E.A.</span>

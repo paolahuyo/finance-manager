@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { FeeBreakdownRow, RecurringItem, CardInstallments, UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthHistoryPoint, MonthSummary, MonthTag, PaymentPlan, PlanRequest, Transaction, TransactionPayload, TrmInfo } from './types';
+import type { FeeBreakdownRow, RecurringItem, CardInstallments, UpcomingPayment, Account, AccountDetail, AccountPayload, Category, ImportItem, ImportPreview, ImportResult, MonthHistoryPoint, MonthSummary, MonthTag, SubscriptionsResponse, PaymentPlan, PlanRequest, Transaction, TransactionPayload, TrmInfo } from './types';
 
 const http = axios.create({ baseURL: '/api' });
 
@@ -31,6 +31,22 @@ export const api = {
 
   summaryHistory: async (months: number): Promise<MonthHistoryPoint[]> =>
     (await http.get<MonthHistoryPoint[]>('/summary/history', { params: { months } })).data,
+
+  subscriptions: async (): Promise<SubscriptionsResponse> =>
+    (await http.get<SubscriptionsResponse>('/subscriptions')).data,
+
+  markSubscription: async (key: string, status: 'keep' | 'cancel' | null): Promise<void> => {
+    if (status === null) await http.delete(`/subscriptions/${encodeURIComponent(key)}`);
+    else await http.put(`/subscriptions/${encodeURIComponent(key)}`, { status });
+  },
+
+  addManualSubscription: async (name: string, amount: number): Promise<void> => {
+    await http.post('/subscriptions/manual', { name, amount });
+  },
+
+  deleteManualSubscription: async (id: number): Promise<void> => {
+    await http.delete(`/subscriptions/manual/${id}`);
+  },
 
   monthTags: async (): Promise<MonthTag[]> => (await http.get<MonthTag[]>('/month-tags')).data,
 

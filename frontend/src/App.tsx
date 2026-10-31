@@ -12,16 +12,18 @@ import AccountsPage from './pages/AccountsPage';
 import AccountDetailPage from './pages/AccountDetailPage';
 import PaymentPlanPage from './pages/PaymentPlanPage';
 import ImportPage from './pages/ImportPage';
+import SubscriptionsPage from './pages/SubscriptionsPage';
 import SummaryPage from './pages/SummaryPage';
 import TransactionsPage from './pages/TransactionsPage';
 
-type Tab = 'summary' | 'transactions' | 'plan' | 'accounts' | 'import';
+type Tab = 'summary' | 'transactions' | 'plan' | 'accounts' | 'subscriptions' | 'import';
 
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: 'summary', label: 'Resumen' },
   { id: 'transactions', label: 'Movimientos' },
   { id: 'plan', label: 'Plan de pagos' },
   { id: 'accounts', label: 'Deudas' },
+  { id: 'subscriptions', label: 'Suscripciones' },
   { id: 'import', label: 'Importar' }
 ];
 
@@ -211,6 +213,7 @@ function App(): JSX.Element {
           />
         )}
         {tab === 'plan' && <PaymentPlanPage onChanged={refresh} />}
+        {tab === 'subscriptions' && <SubscriptionsPage refreshKey={transactions} />}
         {tab === 'import' && <ImportPage accounts={accounts} categories={categories} onImported={refresh} />}
         {tab === 'accounts' && openAccountId !== null && (
           <AccountDetailPage accountId={openAccountId} month={month} onBack={() => setOpenAccountId(null)} />

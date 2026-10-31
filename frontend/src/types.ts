@@ -60,6 +60,25 @@ export interface MonthHistoryPoint {
   interest: number;
 }
 
+export interface Subscription {
+  key: string;
+  name: string;
+  typical_amount: number;
+  months: string[];
+  charges: number;
+  last_date: string;
+  annual_cost: number;
+  possible_duplicate: boolean;
+  status: 'keep' | 'cancel' | null;
+  /** Set for subscriptions written down by hand (they have no movements behind them). */
+  manual_id?: number;
+}
+
+export interface SubscriptionsResponse {
+  subscriptions: Subscription[];
+  totals: { monthly: number; yearly: number; cancel_monthly: number; cancel_yearly: number };
+}
+
 /** A month marked as "not normal" (e.g. a trip). */
 export interface MonthTag {
   month: string;
@@ -148,8 +167,13 @@ export interface InstallmentRow {
   installments_total: number;
   balance_before: number;
   capital_paid: number;
+  /** Balance now: the statement balance minus the directed payments made after the cut-off. */
   balance_after: number;
   rate: number;
+  /** Balance as printed in the statement. */
+  statement_balance?: number;
+  /** Paid to this purchase after the statement cut-off. */
+  paid_since?: number;
 }
 
 export interface AccountDetail {
