@@ -74,7 +74,15 @@ router.post('/manual', async (req: Request, res: Response, next: NextFunction) =
 router.delete('/manual/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const id = Number(req.params.id);
-    await getPool().query('DELETE FROM manual_subscriptions WHERE id = ?', [id]);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: 'Invalid id' });
+      return;
+    }
+    const [result] = await getPool().query<ResultSetHeader>('DELETE FROM manual_subscriptions WHERE id = ?', [id]);
+    if (result.affectedRows === 0) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
     await getPool().query('DELETE FROM subscription_marks WHERE merchant_key = ?', [`manual-${id}`]);
     res.status(204).end();
   } catch (error) {

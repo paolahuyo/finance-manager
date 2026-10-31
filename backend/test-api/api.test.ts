@@ -107,6 +107,19 @@ describe('fixed monthly items', () => {
   });
 });
 
+describe('editing fixed monthly items', () => {
+  test('an item can be edited, and editing one that does not exist is a 404', async () => {
+    const created = await api('POST', '/recurring', { type: 'expense', description: 'Fijo editable', amount: 20000, day_of_month: 5 });
+    const id = created.data.id;
+    const edited = await api('PUT', `/recurring/${id}`, { type: 'expense', description: 'Fijo editado', amount: 25000, day_of_month: 5 });
+    assert.equal(edited.status, 200);
+    const list = (await api('GET', '/recurring')).data;
+    assert.equal(list.find((r: any) => r.id === id).amount_cop, 25000);
+
+    assert.equal((await api('PUT', '/recurring/999999', { type: 'expense', description: 'Nada', amount: 1000, day_of_month: 5 })).status, 404);
+  });
+});
+
 describe('month tags', () => {
   test('a month can be marked as a trip and unmarked', async () => {
     assert.equal((await api('PUT', '/month-tags/2026-07', { tag: 'viaje' })).status, 200);
@@ -147,6 +160,11 @@ describe('subscriptions', () => {
     list = (await api('GET', '/subscriptions')).data;
     assert.equal(list.subscriptions.some((s: any) => s.name === 'Servicio de prueba'), false);
     assert.equal(list.totals.cancel_yearly, 0, 'the decision about a removed subscription is cleaned up too');
+  });
+
+  test('deleting a manual subscription that does not exist or has a bad id fails clearly', async () => {
+    assert.equal((await api('DELETE', '/subscriptions/manual/999999')).status, 404);
+    assert.equal((await api('DELETE', '/subscriptions/manual/abc')).status, 400);
   });
 
   test('a subscription without a name or amount is rejected', async () => {

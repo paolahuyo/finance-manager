@@ -7,8 +7,8 @@ const charge = (description: string, amount_cop: number, date: string) => ({ des
 test('merchantKey drops reference codes and payment-processor prefixes', () => {
   assert.equal(merchantKey('STREAMLY*AB12CD'), 'STREAMLY');
   assert.equal(merchantKey('SQ *CAFE CENTRAL LLC'), 'CAFE CENTRAL LLC');
-  assert.equal(merchantKey('Tienda Online INC* W0P5XZZA'), 'TIENDA ONLINE INC');
-  assert.equal(merchantKey('MARKET PLACE*5R9HL27P2'), 'MARKET PLACE');
+  assert.equal(merchantKey('Tienda Online INC* AAAA1111'), 'TIENDA ONLINE INC');
+  assert.equal(merchantKey('MARKET PLACE*BBBB2222'), 'MARKET PLACE');
 });
 
 test('a stable monthly charge in several months is a subscription with its yearly cost', () => {
@@ -43,9 +43,9 @@ test('many charges per month with very different amounts (taxis, groceries) are 
 
 test('two near-identical charges within a few days are flagged as a possible duplicate', () => {
   const result = detectSubscriptions([
-    charge('APP PRAYER INC', 240000, '2026-09-26'),
-    charge('APP PRAYER INC', 240000, '2026-09-28'),
-    charge('APP PRAYER INC', 236000, '2026-10-06')
+    charge('DEMO APP INC', 120000, '2026-09-26'),
+    charge('DEMO APP INC', 120000, '2026-09-28'),
+    charge('DEMO APP INC', 118000, '2026-10-06')
   ]);
   assert.equal(result.length, 1);
   assert.equal(result[0].possible_duplicate, true);
