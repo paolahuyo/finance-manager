@@ -114,6 +114,12 @@ Las pruebas usan `node:test` con `ts-node` (`src/**/*.test.ts`). Cada error corr
 4. No leer carpetas protegidas del sistema (Mensajes, etc.) ni saltarse permisos de macOS; pedir que arrastre el
    archivo. Nunca recibir ni usar tokens o claves pegados en el chat.
 
+## Revisor del proyecto
+
+Agent in `.claude/agents/finance-reviewer.md` (written in English; its report comes out in Spanish). In `claude`
+(for example from Warp) ask: "use the finance-reviewer agent to review the branch" or "…PR #X". It only reports;
+it does not edit files.
+
 ## Trabajo pendiente documentado
 
 - `docs/plan-de-pagos.md` — especificación del generador de plan de pagos (implementado en `backend/src/services/paymentPlan.ts`, `POST /api/plan`, pestaña «Plan de pagos»).
