@@ -48,8 +48,8 @@ cd backend && npx tsc --noEmit && npm test
 # Necesitan MySQL arriba: docker compose up -d db
 cd backend && npm run test:api
 
-# Frontend: tipos
-cd frontend && npx tsc --noEmit
+# Frontend: tipos y guardia de traducciones (mismas claves EN/ES, sin español escrito a mano en pantallas ya traducidas)
+cd frontend && npx tsc --noEmit && npm test
 ```
 
 Antes de terminar cualquier cambio: `tsc --noEmit` en backend y frontend, y `npm test` en backend deben pasar.
@@ -118,8 +118,8 @@ Las pruebas usan `node:test` con `ts-node` (`src/**/*.test.ts`). Cada error corr
 
 UI text goes through i18next (`frontend/src/i18n/`, `locales/en.json` and `es.json`); selector EN/ES in the header, choice
 kept in localStorage. New UI text must use `t('section.key')` with both languages, never hard-coded strings. Money is
-always COP; only number/date formatting follows the language. Screens still to translate: everything except header, tabs
-and month navigator (waiting for the UI to settle). Category names and API error messages are still Spanish.
+always COP; only number/date formatting follows the language. Screens still to translate are listed in `PENDING` in `frontend/tests/i18n.test.mjs` (the list can only shrink:
+remove a screen from it when you translate it). Category names and API error messages are still Spanish.
 
 ## Revisor del proyecto
 
