@@ -114,6 +114,13 @@ Las pruebas usan `node:test` con `ts-node` (`src/**/*.test.ts`). Cada error corr
 4. No leer carpetas protegidas del sistema (Mensajes, etc.) ni saltarse permisos de macOS; pedir que arrastre el
    archivo. Nunca recibir ni usar tokens o claves pegados en el chat.
 
+## Idiomas (EN/ES)
+
+UI text goes through i18next (`frontend/src/i18n/`, `locales/en.json` and `es.json`); selector EN/ES in the header, choice
+kept in localStorage. New UI text must use `t('section.key')` with both languages, never hard-coded strings. Money is
+always COP; only number/date formatting follows the language. Screens still to translate: everything except header, tabs
+and month navigator (waiting for the UI to settle). Category names and API error messages are still Spanish.
+
 ## Revisor del proyecto
 
 Agent in `.claude/agents/finance-reviewer.md` (written in English; its report comes out in Spanish). In `claude`

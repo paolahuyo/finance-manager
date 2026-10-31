@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api, errorMessage } from './api';
 import type { Account, AccountPayload, Category, MonthHistoryPoint, MonthSummary, MonthTag, Transaction, TransactionPayload } from './types';
 import { currentMonth, todayISO } from './utils/format';
@@ -18,16 +19,10 @@ import TransactionsPage from './pages/TransactionsPage';
 
 type Tab = 'summary' | 'transactions' | 'plan' | 'accounts' | 'subscriptions' | 'import';
 
-const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
-  { id: 'summary', label: 'Resumen' },
-  { id: 'transactions', label: 'Movimientos' },
-  { id: 'plan', label: 'Plan de pagos' },
-  { id: 'accounts', label: 'Deudas' },
-  { id: 'subscriptions', label: 'Suscripciones' },
-  { id: 'import', label: 'Importar' }
-];
+const TABS: ReadonlyArray<Tab> = ['summary', 'transactions', 'plan', 'accounts', 'subscriptions', 'import'];
 
 function App(): JSX.Element {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('summary');
   const [month, setMonth] = useState<string>(currentMonth());
   const [categories, setCategories] = useState<Category[]>([]);
@@ -163,8 +158,8 @@ function App(): JSX.Element {
       <Header />
       <main className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <nav className="flex gap-1 bg-gray-200 p-1 rounded-lg" aria-label="Secciones">
-            {TABS.map(({ id, label }) => (
+          <nav className="flex gap-1 bg-gray-200 p-1 rounded-lg" aria-label={t('app.sections')}>
+            {TABS.map(id => (
               <button
                 key={id}
                 onClick={() => {
@@ -176,7 +171,7 @@ function App(): JSX.Element {
                   tab === id ? 'bg-white shadow text-blue-700' : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                {label}
+                {t(`tabs.${id}`)}
               </button>
             ))}
           </nav>

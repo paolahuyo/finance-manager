@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Finance Manager",
+    "tagline": "Track your income, spending and debts in Colombian pesos",
+    "sections": "Sections",
+    "language": "Language"
+  },
+  "tabs": {
+    "summary": "Summary",
+    "transactions": "Transactions",
+    "plan": "Payment plan",
+    "accounts": "Debts",
+    "subscriptions": "Subscriptions",
+    "import": "Import"
+  },
+  "month": {
+    "previous": "Previous month",
+    "next": "Next month",
+    "today": "Today"
+  },
+  "common": {
+    "loading": "Loading…",
+    "noData": "No data.",
+    "noDataThisMonth": "No data this month.",
+    "total": "Total",
+    "others": "Other",
+    "noDataShort": "no data"
+  },
+  "summary": {
+    "tripMonthYes": "{{month}} is a trip month.",
+    "tripMonthYesHint": "It has higher spending than usual and is left out of the normal-month average.",
+    "tripMonthAsk": "Was {{month}} a trip or other special month? Mark it so it does not get mixed with your normal spending.",
+    "unmarkTrip": "Remove trip mark",
+    "markTrip": "✈️ Mark as trip month",
+    "income": "Income",
+    "expenses": "Expenses",
+    "monthBalance": "Month balance",
+    "interest": "Interest this month",
+    "fees": "Annual fees, insurance and commissions",
+    "payments": "Payments to cards and debts",
+    "whereMoneyGoes": "Where does the money go?",
+    "expensesByCategory": "{{month}} expenses by category",
+    "incomeByCategory": "Income by category"
+  },
+  "spendingByMonth": {
+    "title": "Spending by month",
+    "tripHint": "Trip months (✈️, in orange) are left out of the normal-month average.",
+    "trip": "trip",
+    "normalAverage": "Normal month (average)",
+    "tripAverage": "Trip month (average)",
+    "noStatementNote": "Months with no statement loaded show as “no data”: the chart only sees what is already in the app.",
+    "thousandSuffix": "k",
+    "millionSuffix": "M"
+  }
+}
