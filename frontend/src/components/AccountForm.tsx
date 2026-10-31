@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react';
+import MoneyInput from './MoneyInput';
 import type { AccountKind, AccountPayload } from '../types';
 
 interface AccountFormProps {
@@ -11,7 +12,8 @@ const EMPTY: AccountPayload = {
   kind: 'credit_card',
   annual_rate: '',
   credit_limit: '',
-  opening_balance: ''
+  opening_balance: '',
+  allows_directed_payments: false
 };
 
 const inputClass =
@@ -73,19 +75,25 @@ export default function AccountForm({ onSubmit }: AccountFormProps): JSX.Element
         </div>
         <div>
           <label className={labelClass} htmlFor="acc-limit">Cupo (COP)</label>
-          <input id="acc-limit" className={inputClass} type="number" min="0" step="any"
-            value={form.credit_limit} onChange={e => set('credit_limit', e.target.value)} placeholder="0" />
+          <MoneyInput id="acc-limit" className={inputClass}
+            value={form.credit_limit} onChange={v => set('credit_limit', v)} placeholder="0" />
         </div>
       </div>
 
       <div>
         <label className={labelClass} htmlFor="acc-opening">Saldo actual que debes (COP)</label>
-        <input id="acc-opening" className={inputClass} type="number" min="0" step="any"
-          value={form.opening_balance} onChange={e => set('opening_balance', e.target.value)} placeholder="0" />
+        <MoneyInput id="acc-opening" className={inputClass}
+          value={form.opening_balance} onChange={v => set('opening_balance', v)} placeholder="0" />
         <p className="text-xs text-gray-500 mt-1">
           Lo que debes hoy. Desde aquí se suman tus compras y se restan tus abonos.
         </p>
       </div>
+
+      <label className="flex items-center gap-2 text-sm text-gray-700">
+        <input type="checkbox" checked={form.allows_directed_payments}
+          onChange={e => set('allows_directed_payments', e.target.checked)} />
+        El banco permite abonar a una compra específica
+      </label>
 
       <button type="submit" disabled={saving}
         className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 font-medium disabled:opacity-60">

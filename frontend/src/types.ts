@@ -53,6 +53,38 @@ export interface MonthSummary {
   incomeByCategory: CategoryTotal[];
 }
 
+export interface MonthHistoryPoint {
+  month: string;
+  income: number;
+  expense: number;
+  interest: number;
+}
+
+export interface Subscription {
+  key: string;
+  name: string;
+  typical_amount: number;
+  months: string[];
+  charges: number;
+  last_date: string;
+  annual_cost: number;
+  possible_duplicate: boolean;
+  status: 'keep' | 'cancel' | null;
+  /** Set for subscriptions written down by hand (they have no movements behind them). */
+  manual_id?: number;
+}
+
+export interface SubscriptionsResponse {
+  subscriptions: Subscription[];
+  totals: { monthly: number; yearly: number; cancel_monthly: number; cancel_yearly: number };
+}
+
+/** A month marked as "not normal" (e.g. a trip). */
+export interface MonthTag {
+  month: string;
+  tag: string;
+}
+
 export type AccountKind = 'credit_card' | 'loan' | 'personal';
 
 export interface Account {
@@ -64,6 +96,7 @@ export interface Account {
   credit_limit: number | null;
   opening_balance: number;
   balance_as_of: string | null;
+  allows_directed_payments: boolean;
   notes: string | null;
   balance: number;
   month_interest: number;
@@ -80,6 +113,7 @@ export interface AccountPayload {
   annual_rate: string;
   credit_limit: string;
   opening_balance: string;
+  allows_directed_payments: boolean;
 }
 
 export interface TrmInfo {
@@ -133,8 +167,13 @@ export interface InstallmentRow {
   installments_total: number;
   balance_before: number;
   capital_paid: number;
+  /** Balance now: the statement balance minus the directed payments made after the cut-off. */
   balance_after: number;
   rate: number;
+  /** Balance as printed in the statement. */
+  statement_balance?: number;
+  /** Paid to this purchase after the statement cut-off. */
+  paid_since?: number;
 }
 
 export interface AccountDetail {
@@ -181,4 +220,53 @@ export interface LoanScheduleRow {
   interest: number;
   insurance: number;
   payment: number;
+}
+
+export type PlanStrategy = 'fewer' | 'finish';
+
+export interface PlanExtraIncome {
+  description: string;
+  amount: number;
+  date: string;
+  target?: { account_id: number; description: string };
+}
+
+export interface PlanRequest {
+  today: string;
+  cash_now: number;
+  reserve_one_installment: number;
+  extra_incomes: PlanExtraIncome[];
+  strategy: PlanStrategy;
+}
+
+export interface PlanStep {
+  order: number;
+  date: string;
+  due_by?: string;
+  kind: 'minimum' | 'fixed' | 'reserve' | 'directed' | 'extra_capital' | 'free';
+  account_id?: number;
+  account_name?: string;
+  purchase?: { description: string; purchase_date: string; balance: number; rate: number };
+  amount: number;
+  source: string;
+  monthly_saving?: number;
+  finishes_purchase?: boolean;
+  after_cutoff?: boolean;
+  note?: string;
+}
+
+export interface PaymentPlan {
+  steps: PlanStep[];
+  totals: { inflows: number; minimums: number; fixed: number; reserve: number; extra: number; free: number; monthly_saving: number };
+  warnings: string[];
+}
+
+export interface FeeBreakdownRow {
+  account_id: number;
+  account_name: string;
+  category: string;
+  month_total: number;
+  year_total: number;
+  all_time_total: number;
+  last_date: string;
 }

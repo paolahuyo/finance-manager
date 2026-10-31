@@ -86,7 +86,9 @@ export async function initDb(): Promise<void> {
       ['due_date', 'DATE NULL'],
       ['minimum_payment', 'DECIMAL(15, 2) NULL'],
       ['total_payment', 'DECIMAL(15, 2) NULL'],
-      ['due_cutoff', 'DATE NULL']
+      ['due_cutoff', 'DATE NULL'],
+      // Whether the bank lets you pay a specific purchase (BBVA does); used by the payment plan.
+      ['allows_directed_payments', 'TINYINT(1) NOT NULL DEFAULT 0']
     ]) {
       const [cols] = await connection.query<RowDataPacket[]>(
         `SELECT 1 FROM information_schema.columns
@@ -163,6 +165,31 @@ export async function initDb(): Promise<void> {
         active TINYINT(1) NOT NULL DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_recurring_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+      )
+    `);
+
+    // Months that are not a normal month (e.g. a trip): charts show them apart and keep them out of the average.
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS month_tags (
+        month CHAR(7) PRIMARY KEY,
+        tag VARCHAR(30) NOT NULL
+      )
+    `);
+
+    // Subscriptions the user wrote down by hand (charges the statements do not show as movements).
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS manual_subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        amount_cop DECIMAL(15, 2) NOT NULL
+      )
+    `);
+
+    // What the user decided about each detected subscription (keep or cancel).
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS subscription_marks (
+        merchant_key VARCHAR(60) PRIMARY KEY,
+        status VARCHAR(10) NOT NULL
       )
     `);
 

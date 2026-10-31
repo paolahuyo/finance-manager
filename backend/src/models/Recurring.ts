@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { getPool } from '../db/init';
-import { monthRange } from '../utils/month';
+import { appliesInMonth, monthRange } from '../utils/month';
 
 export interface IRecurring {
   id: number;
@@ -11,6 +11,8 @@ export interface IRecurring {
   category_id: number | null;
   category_name: string | null;
   day_of_month: number;
+  /** 'YYYY-MM' of the month the item was created: it is never applied to earlier months. */
+  since_month: string;
 }
 
 export interface RecurringInput {
@@ -35,7 +37,8 @@ const occurrenceHash = (id: number, month: string): string =>
 export class Recurring {
   static async findAll(): Promise<IRecurring[]> {
     const [rows] = await getPool().query<RowDataPacket[]>(
-      `SELECT r.id, r.type, r.description, r.amount_cop, r.category_id, c.name AS category_name, r.day_of_month
+      `SELECT r.id, r.type, r.description, r.amount_cop, r.category_id, c.name AS category_name, r.day_of_month,
+              DATE_FORMAT(r.created_at, '%Y-%m') AS since_month
        FROM recurring_items r LEFT JOIN categories c ON c.id = r.category_id
        WHERE r.active = 1 ORDER BY r.day_of_month, r.type`
     );
@@ -48,6 +51,15 @@ export class Recurring {
       [data.type, data.description, data.amount_cop, data.category_id, data.day_of_month]
     );
     return result.insertId;
+  }
+
+  static async update(id: number, data: RecurringInput): Promise<boolean> {
+    const [result] = await getPool().query<ResultSetHeader>(
+      `UPDATE recurring_items SET type = ?, description = ?, amount_cop = ?, category_id = ?, day_of_month = ?
+       WHERE id = ? AND active = 1`,
+      [data.type, data.description, data.amount_cop, data.category_id, data.day_of_month, id]
+    );
+    return result.affectedRows > 0;
   }
 
   static async deactivate(id: number): Promise<boolean> {
@@ -63,6 +75,7 @@ export class Recurring {
     const { start } = monthRange(month);
     let created = 0;
     for (const item of await this.findAll()) {
+      if (!appliesInMonth(item.since_month, month)) continue;
       const date = occurrenceDate(month, item.day_of_month);
       if (date < start || date > today) continue;
       const [result] = await getPool().query<ResultSetHeader>(

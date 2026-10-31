@@ -49,7 +49,7 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
   }, [accountId, month]);
 
   const back = (
-    <button onClick={onBack} className="text-sm text-blue-700 hover:underline">← Todas las tarjetas</button>
+    <button onClick={onBack} className="text-sm text-blue-700 hover:underline">← Todas las deudas</button>
   );
   if (error) return <div className="space-y-4">{back}<div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div></div>;
   if (!detail) return <div className="space-y-4">{back}<p className="text-gray-500">Cargando…</p></div>;
@@ -84,6 +84,19 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
           {account.balance_as_of ? ` · saldo tomado del extracto con corte ${formatLongDay(account.balance_as_of)}` : ''}
           {account.notes ? ` · ${account.notes}` : ''}
         </p>
+        <label className="flex items-center gap-2 text-sm text-gray-700 mt-1">
+          <input
+            type="checkbox"
+            checked={account.allows_directed_payments}
+            onChange={e =>
+              api
+                .setDirectedPayments(account, e.target.checked)
+                .then(() => setDetail({ ...detail, account: { ...account, allows_directed_payments: e.target.checked } }))
+                .catch(err => setError(errorMessage(err, 'No se pudo guardar el cambio')))
+            }
+          />
+          El banco permite abonar a una compra específica (se usa en el plan de pagos)
+        </label>
         <p className="text-sm text-gray-600">
           En el año: intereses {formatCOP(account.year_interest)} · manejo, seguros y comisiones {formatCOP(account.year_fees)}
         </p>
@@ -219,7 +232,14 @@ export default function AccountDetailPage({ accountId, month, onBack }: AccountD
                       <span className="text-xs text-gray-500"> · faltan {Math.max(r.installments_total - r.installment_no, 0)}</span>
                     </td>
                     <td className={`${td} text-right`}>{formatCOP(r.capital_paid)}</td>
-                    <td className={`${td} text-right font-medium`}>{formatCOP(r.balance_after)}</td>
+                    <td className={`${td} text-right font-medium`}>
+                      {formatCOP(r.balance_after)}
+                      {(r.paid_since ?? 0) > 0 && (
+                        <p className="text-xs font-normal text-green-700">
+                          {r.balance_after > 0 ? 'pagaste' : 'pagada con'} {formatCOP(r.paid_since ?? 0)} desde el corte
+                        </p>
+                      )}
+                    </td>
                     <td className={td}>
                       {r.rate > 0 ? (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">{r.rate}% E.A.</span>

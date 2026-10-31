@@ -1,5 +1,6 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { api, errorMessage } from '../api';
+import MoneyInput from './MoneyInput';
 import type { Category, RecurringItem, UpcomingPayment } from '../types';
 import { formatCOP, formatLongDay, todayISO } from '../utils/format';
 
@@ -27,6 +28,7 @@ export default function MonthPlan({ categories, refreshKey, onChanged }: MonthPl
   const [items, setItems] = useState<RecurringItem[]>([]);
   const [due, setDue] = useState<UpcomingPayment[]>([]);
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ type: 'expense' as 'income' | 'expense', description: '', amount: '', day: '1', category: '' });
 
@@ -55,21 +57,38 @@ export default function MonthPlan({ categories, refreshKey, onChanged }: MonthPl
   const submit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     try {
-      await api.createRecurring({
+      const payload = {
         type: form.type,
         description: form.description,
         amount: Number(form.amount),
         category_id: form.category ? Number(form.category) : null,
         day_of_month: Number(form.day)
-      });
+      };
+      if (editingId !== null) await api.updateRecurring(editingId, payload);
+      else await api.createRecurring(payload);
       setForm({ type: 'expense', description: '', amount: '', day: '1', category: '' });
       setAdding(false);
+      setEditingId(null);
       setError('');
       load();
       onChanged();
     } catch (err) {
       setError(errorMessage(err, 'No se pudo guardar'));
     }
+  };
+  const edit = (i: RecurringItem): void => {
+    setForm({
+      type: i.type, description: i.description, amount: String(i.amount_cop),
+      day: String(i.day_of_month), category: i.category_id ? String(i.category_id) : ''
+    });
+    setEditingId(i.id);
+    setAdding(true);
+    setError('');
+  };
+  const cancel = (): void => {
+    setAdding(false);
+    setEditingId(null);
+    setForm({ type: 'expense', description: '', amount: '', day: '1', category: '' });
   };
   const remove = async (id: number): Promise<void> => {
     if (!window.confirm('¿Quitar este movimiento fijo? Los meses ya registrados se conservan.')) return;
@@ -122,6 +141,7 @@ export default function MonthPlan({ categories, refreshKey, onChanged }: MonthPl
                   <span>Día {i.day_of_month} · {i.description}</span>
                   <span className="flex gap-3">
                     <span className={i.type === 'income' ? 'text-green-700' : 'text-red-700'}>{formatCOP(i.amount_cop)}</span>
+                    <button onClick={() => edit(i)} className="text-gray-400 hover:text-blue-600" aria-label={`Editar ${i.description}`}>✎</button>
                     <button onClick={() => remove(i.id)} className="text-gray-400 hover:text-red-600" aria-label={`Quitar ${i.description}`}>✕</button>
                   </span>
                 </li>
@@ -136,19 +156,19 @@ export default function MonthPlan({ categories, refreshKey, onChanged }: MonthPl
 
       {(adding || !salary) && (
         <form onSubmit={submit} className="flex flex-wrap items-end gap-2 border-t pt-4">
-          <select className={input} value={form.type} onChange={e => setForm({ ...form, type: e.target.value as 'income' | 'expense', category: '' })} aria-label="Tipo">
+          <select className={input} disabled={editingId !== null} value={form.type} onChange={e => setForm({ ...form, type: e.target.value as 'income' | 'expense', category: '' })} aria-label="Tipo">
             <option value="expense">Gasto fijo</option>
             <option value="income">Ingreso fijo</option>
           </select>
           <input className={input} placeholder="Descripción (ej. Internet)" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required aria-label="Descripción" />
-          <input className={`${input} w-36`} type="number" min="0" step="any" placeholder="Monto" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required aria-label="Monto" />
+          <MoneyInput className={`${input} w-36`} placeholder="Monto" value={form.amount} onChange={v => setForm({ ...form, amount: v })} required aria-label="Monto" />
           <label className="text-sm">Día <input className={`${input} w-16`} type="number" min="1" max="31" value={form.day} onChange={e => setForm({ ...form, day: e.target.value })} required /></label>
           <select className={input} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} aria-label="Categoría">
             <option value="">Sin categoría</option>
             {categories.filter(c => c.type === form.type).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">Guardar</button>
-          {adding && <button type="button" onClick={() => setAdding(false)} className="text-sm text-gray-500">Cancelar</button>}
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">{editingId !== null ? 'Guardar cambios' : 'Guardar'}</button>
+          {adding && <button type="button" onClick={cancel} className="text-sm text-gray-500">Cancelar</button>}
           {error && <p className="w-full text-sm text-red-600">{error}</p>}
         </form>
       )}

@@ -10,6 +10,9 @@ import exchangeRateRouter from './routes/exchangeRate';
 import importsRouter from './routes/imports';
 import recurringRouter from './routes/recurring';
 import loansRouter from './routes/loans';
+import planRouter from './routes/plan';
+import monthTagsRouter from './routes/monthTags';
+import subscriptionsRouter from './routes/subscriptions';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -39,6 +42,9 @@ app.use('/api/exchange-rate', exchangeRateRouter);
 app.use('/api/imports', importsRouter);
 app.use('/api/recurring', recurringRouter);
 app.use('/api/loans', loansRouter);
+app.use('/api/plan', planRouter);
+app.use('/api/month-tags', monthTagsRouter);
+app.use('/api/subscriptions', subscriptionsRouter);
 
 // Health check
 app.get('/health', (_req, res) => {
