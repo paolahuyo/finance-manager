@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Finance Manager",
+    "tagline": "Controla tus ingresos, gastos y deudas en pesos colombianos",
+    "sections": "Secciones",
+    "language": "Idioma"
+  },
+  "tabs": {
+    "summary": "Resumen",
+    "transactions": "Movimientos",
+    "plan": "Plan de pagos",
+    "accounts": "Deudas",
+    "subscriptions": "Suscripciones",
+    "import": "Importar"
+  },
+  "month": {
+    "previous": "Mes anterior",
+    "next": "Mes siguiente",
+    "today": "Hoy"
+  },
+  "common": {
+    "loading": "Cargando…",
+    "noData": "Sin datos.",
+    "noDataThisMonth": "Sin datos este mes.",
+    "total": "Total",
+    "others": "Otros",
+    "noDataShort": "sin datos"
+  },
+  "summary": {
+    "tripMonthYes": "{{month}} es un mes de viaje.",
+    "tripMonthYesHint": "Tiene más gastos de lo normal y no cuenta para el promedio de un mes normal.",
+    "tripMonthAsk": "¿{{month}} fue un mes de viaje u otro mes especial? Márcalo para no mezclarlo con tu gasto normal.",
+    "unmarkTrip": "Quitar marca de viaje",
+    "markTrip": "✈️ Marcar como mes de viaje",
+    "income": "Ingresos",
+    "expenses": "Gastos",
+    "monthBalance": "Balance del mes",
+    "interest": "Intereses del mes",
+    "fees": "Cuota de manejo, seguros y comisiones",
+    "payments": "Abonos a tarjetas y deudas",
+    "whereMoneyGoes": "¿En qué se va la plata?",
+    "expensesByCategory": "Gastos de {{month}} por categoría",
+    "incomeByCategory": "Ingresos por categoría"
+  },
+  "spendingByMonth": {
+    "title": "Gastos por mes",
+    "tripHint": "Los meses de viaje (✈️, en naranja) no cuentan para el promedio de un mes normal.",
+    "trip": "viaje",
+    "normalAverage": "Mes normal (promedio)",
+    "tripAverage": "Mes de viaje (promedio)",
+    "noStatementNote": "Los meses sin extracto cargado salen como «sin datos»: el gráfico solo ve lo que ya está en la app.",
+    "thousandSuffix": "mil",
+    "millionSuffix": "M"
+  }
+}
